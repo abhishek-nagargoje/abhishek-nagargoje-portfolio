@@ -9,6 +9,8 @@ const TopLeftImg = () => {
         alt="left cover bg"
         width={400}
         height={400}
+        priority
+        style={{ width: "100%", height: "auto" }}
       />
     </div>
   );

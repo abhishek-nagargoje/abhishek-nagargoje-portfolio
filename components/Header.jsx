@@ -3,11 +3,22 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Socials from "./Socials";
 import { personalInfo } from "../data/personalInfo";
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
+  const router = useRouter();
+
+  // Hidden entry point to the admin area — intentionally not in the public
+  // nav. This is UX only, not a security boundary: every admin read/write is
+  // independently gated by Supabase Auth + RLS regardless of how someone
+  // reaches the /admin route.
+  const handleLogoDoubleClick = (e) => {
+    e.preventDefault();
+    router.push("/admin/login");
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -28,7 +39,7 @@ export default function Header() {
     >
       <div className="max-w-[1280px] mx-auto px-6 sm:px-10 xl:px-16">
         <div className="flex items-center justify-between h-[72px]">
-          <Link href="/" className="group flex items-center gap-1 relative">
+          <Link href="/" onDoubleClick={handleLogoDoubleClick} className="group flex items-center gap-1 relative">
             <motion.span
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
@@ -61,10 +72,6 @@ export default function Header() {
       <div className={`absolute bottom-0 left-0 right-0 h-px transition-opacity duration-500 ${
         scrolled ? "opacity-0" : "opacity-100"
       } bg-gradient-to-r from-transparent via-violet-500/30 to-transparent`} />
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&display=swap');
-      `}</style>
     </motion.header>
   );
 }

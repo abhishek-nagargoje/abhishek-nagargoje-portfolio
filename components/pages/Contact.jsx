@@ -5,6 +5,10 @@ import emailjs from "@emailjs/browser";
 import { BsArrowRight, BsGithub } from "react-icons/bs";
 import { HiOutlineEnvelope, HiOutlineMapPin, HiOutlineArrowDownTray } from "react-icons/hi2";
 import { RiLinkedinLine } from "react-icons/ri";
+import { personalInfo } from "../../data/personalInfo";
+import { getProfile } from "../../lib/supabase/queries";
+import { mapProfileRow } from "../../lib/supabase/transform";
+import { useCmsData } from "../../lib/supabase/useCmsData";
 
 // ─── 🔑 YOUR EMAILJS CREDENTIALS — fill these in ──────────────────────────────
 const EMAILJS_SERVICE_ID  = "service_g2125im";   // e.g. "service_abc123"
@@ -12,20 +16,16 @@ const EMAILJS_TEMPLATE_ID = "template_4rmkxgu";  // e.g. "template_xyz456"
 const EMAILJS_PUBLIC_KEY  = "UgmKRJkfqn_to5orc";   // e.g. "abcDEFghiJKL789"
 // ──────────────────────────────────────────────────────────────────────────────
 
-const personalInfo = {
-  email:      "nagargojeabhishek96@gmail.com",
-  location:   "Pune, Maharashtra, India",
-  github:     "https://github.com/N-Abhishek-S",
-  linkedin:   "https://linkedin.com/in/abhishek-nagargoje-a7909a2b2",
-  resumePath: "/Abhishek_MERN_Resume.pdf",
-};
+const fetchProfile = () => getProfile().then(mapProfileRow);
 
-const contactDetails = [
+// personalInfo already matches mapProfileRow's output shape (name/role/email/
+// location/github/linkedin/resumePath/...), so it doubles as the local fallback.
+const buildContactDetails = (profile) => [
   {
     Icon: HiOutlineEnvelope,
     label: "Email",
-    value: personalInfo.email,
-    link:  `mailto:${personalInfo.email}`,
+    value: profile.email,
+    link:  `mailto:${profile.email}`,
     color: "#818cf8",
     glow:  "rgba(99,102,241,0.25)",
     bg:    "rgba(99,102,241,0.1)",
@@ -33,7 +33,7 @@ const contactDetails = [
   {
     Icon: HiOutlineMapPin,
     label: "Location",
-    value: personalInfo.location,
+    value: profile.location,
     link:  null,
     color: "#f472b6",
     glow:  "rgba(244,114,182,0.2)",
@@ -41,11 +41,11 @@ const contactDetails = [
   },
 ];
 
-const socialLinks = [
+const buildSocialLinks = (profile) => [
   {
     Icon: BsGithub,
     label: "GitHub",
-    link:  personalInfo.github,
+    link:  profile.github,
     color: "#e2e8f0",
     glow:  "rgba(226,232,240,0.15)",
     bg:    "rgba(255,255,255,0.06)",
@@ -53,7 +53,7 @@ const socialLinks = [
   {
     Icon: RiLinkedinLine,
     label: "LinkedIn",
-    link:  personalInfo.linkedin,
+    link:  profile.linkedin,
     color: "#60a5fa",
     glow:  "rgba(96,165,250,0.25)",
     bg:    "rgba(96,165,250,0.1)",
@@ -61,7 +61,7 @@ const socialLinks = [
   {
     Icon: HiOutlineEnvelope,
     label: "Email",
-    link:  `mailto:${personalInfo.email}`,
+    link:  `mailto:${profile.email}`,
     color: "#818cf8",
     glow:  "rgba(99,102,241,0.25)",
     bg:    "rgba(99,102,241,0.1)",
@@ -218,6 +218,9 @@ const Contact = () => {
   const [isLoading,  setIsLoading]  = useState(false);
   const [formStatus, setFormStatus] = useState(null); // null | "success" | "error"
   const [errorMsg,   setErrorMsg]   = useState("");
+  const { data: profile } = useCmsData(fetchProfile, personalInfo);
+  const contactDetails = buildContactDetails(profile);
+  const socialLinks = buildSocialLinks(profile);
 
   // ── EmailJS submit ──────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
@@ -269,7 +272,6 @@ const Contact = () => {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
         * { font-family: 'Syne', sans-serif; box-sizing: border-box; }
         input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.22); }
         ::selection { background: rgba(99,102,241,0.35); }
@@ -415,7 +417,7 @@ const Contact = () => {
                 <h4 className="text-base font-semibold mb-1" style={{ color:"#f1f5f9" }}>Download CV</h4>
                 <p className="text-sm mb-5" style={{ color:"rgba(255,255,255,0.4)" }}>My full résumé with skills, projects, and experience.</p>
                 <a
-                  href={personalInfo.resumePath}
+                  href={profile.resumePath}
                   download="Abhishek_MERN_Resume.pdf"
                   className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-250"
                   style={{ background:"rgba(99,102,241,0.9)", color:"#fff" }}

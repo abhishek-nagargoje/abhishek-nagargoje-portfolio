@@ -1,19 +1,18 @@
-"use client";
 export const dynamic = "force-static";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { usePathname } from "next/navigation";
-import Transition from "../../components/Transition";
+import PageTransition from "../../components/PageTransition";
 import Contact from "../../components/pages/Contact";
 
+export const metadata = {
+  title: "Contact",
+  description:
+    "Get in touch with Abhishek Nagargoje for software development and AI project collaborations.",
+};
+
 export default function ContactPage() {
-  const pathname = usePathname();
   return (
-    <AnimatePresence mode="wait">
-      <motion.div key={pathname} className="h-full">
-        <Transition />
-        <Contact />
-      </motion.div>
-    </AnimatePresence>
+    <PageTransition>
+      <Contact />
+    </PageTransition>
   );
 }

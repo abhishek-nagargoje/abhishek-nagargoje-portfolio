@@ -5,15 +5,17 @@ import { usePathname } from "next/navigation";  // ← Next.js hook
 import {
   HiHome,
   HiUser,
+  HiBriefcase,
   HiViewColumns,
   HiAcademicCap,
   HiEnvelope,
 } from "react-icons/hi2";
- 
+
 // nav data
 export const navData = [
   { name: "home", path: "/", Icon: HiHome },
   { name: "about", path: "/about", Icon: HiUser },        // lowercase
+  { name: "experience", path: "/experience", Icon: HiBriefcase }, // lowercase
   { name: "projects", path: "/projects", Icon: HiViewColumns },  // lowercase
   { name: "achievements", path: "/achievements", Icon: HiAcademicCap }, // lowercase
   { name: "contact", path: "/contact", Icon: HiEnvelope }, // lowercase

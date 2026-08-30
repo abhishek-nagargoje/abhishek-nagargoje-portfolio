@@ -1,19 +1,18 @@
-"use client";
 export const dynamic = "force-static";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { usePathname } from "next/navigation";
-import Transition from "../../components/Transition";
+import PageTransition from "../../components/PageTransition";
 import Projects from "../../components/pages/Projects";
 
+export const metadata = {
+  title: "Projects",
+  description:
+    "Production business websites built at Kargar Business Services, platforms currently in development, and personal projects by Abhishek Nagargoje.",
+};
+
 export default function ProjectsPage() {
-  const pathname = usePathname();
   return (
-    <AnimatePresence mode="wait">
-      <motion.div key={pathname} className="h-full">
-        <Transition />
-        <Projects />
-      </motion.div>
-    </AnimatePresence>
+    <PageTransition>
+      <Projects />
+    </PageTransition>
   );
 }

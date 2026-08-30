@@ -9,7 +9,12 @@ import {
   SiAppwrite,
   SiReactrouter,
   SiGreensock,
-  SiThreedotjs,
+  SiSupabase,
+  SiOpenai,
+  SiNodedotjs,
+  SiPostgresql,
+  SiVercel,
+  SiPostman,
 } from "react-icons/si";
 import {
   HiOutlineSparkles,
@@ -23,112 +28,136 @@ import {
 import Avatar from "../Avatar";
 import Circles from "../Circles";
 import { fadeIn } from "../../variants";
-import { personalInfo } from "../../data/personalInfo";
+import { personalInfo, skillsData } from "../../data/personalInfo";
+import { projectsData as localProjectsData } from "../../data/projects";
+import { getProjects, getExperiences, getSkills, getEducation } from "../../lib/supabase/queries";
+import {
+  mapProjectRows,
+  mapExperienceRows,
+  mapEducationRows,
+  groupSkillsByCategory,
+} from "../../lib/supabase/transform";
+import { useCmsData } from "../../lib/supabase/useCmsData";
+
+const fetchProjects = () => getProjects().then(mapProjectRows);
+const fetchExperiences = () => getExperiences().then(mapExperienceRows);
+const fetchSkillGroups = () => getSkills().then(groupSkillsByCategory);
+const fetchEducation = () => getEducation().then(mapEducationRows);
+
+const localSkillGroups = skillsData; // { frontend: [...], backend: [...], ... } — already grouped
+
+const CATEGORY_LABELS = {
+  frontend: "Frontend Development",
+  backend: "Backend & APIs",
+  database: "Database & Backend Services",
+  ai_automation: "AI & Automation",
+  tools: "Tools",
+};
+const CATEGORY_ORDER = ["frontend", "backend", "database", "ai_automation", "tools"];
+
+const ICON_BY_SKILL_NAME = {
+  "React.js": FaReact,
+  "Next.js": SiNextdotjs,
+  "JavaScript (ES6+)": FaJs,
+  "Tailwind CSS": SiTailwindcss,
+  "React Router DOM": SiReactrouter,
+  "React Router": SiReactrouter,
+  "GSAP Animations": SiGreensock,
+  "Supabase": SiSupabase,
+  "Appwrite": SiAppwrite,
+  "OpenAI API": SiOpenai,
+  "Node.js fundamentals": SiNodedotjs,
+  "PostgreSQL": SiPostgresql,
+  "Git & GitHub": FaGitAlt,
+  "Java Fundamentals": FaJava,
+  "Vercel": SiVercel,
+  "Postman": SiPostman,
+};
+
+function buildSkillInfoGroups(skillsByCategory) {
+  return CATEGORY_ORDER.filter((cat) => (skillsByCategory[cat] || []).length > 0).map((cat) => ({
+    title: CATEGORY_LABELS[cat],
+    icons: (skillsByCategory[cat] || []).map((label) => ({
+      Icon: ICON_BY_SKILL_NAME[label] || HiOutlineCode,
+      label,
+    })),
+  }));
+}
 
 /* ─────────────────────────────────────────────────────────────
-   DATA  (corrected content + per-tab accent colours)
+   TAB METADATA — static (icons/colours can't live in the database).
+   The "info" arrays are CMS-driven at render time; this local copy
+   is only the fallback used if Supabase is unreachable.
 ───────────────────────────────────────────────────────────── */
-export const aboutData = [
+const TAB_META = [
+  { title: "skills", icon: HiOutlineCode, accent: "#818cf8", glow: "rgba(99,102,241,0.20)" },
+  { title: "experience", icon: HiOutlineBriefcase, accent: "#34d399", glow: "rgba(52,211,153,0.18)" },
+  { title: "education", icon: HiOutlineAcademicCap, accent: "#f472b6", glow: "rgba(244,114,182,0.18)" },
+  { title: "goals", icon: HiOutlineLightBulb, accent: "#fbbf24", glow: "rgba(251,191,36,0.18)" },
+];
+
+const localSkillsInfo = buildSkillInfoGroups(localSkillGroups);
+
+const localExperienceInfo = [
   {
-    title: "skills",
-    icon: HiOutlineCode,
-    accent: "#818cf8",
-    glow: "rgba(99,102,241,0.20)",
-    info: [
-      {
-        title: "Frontend Development",
-        icons: [
-          { Icon: FaReact, label: "React.js" },
-          { Icon: FaJs, label: "JavaScript (ES6+)" },
-          { Icon: SiTailwindcss, label: "Tailwind CSS" },
-          { Icon: SiReactrouter, label: "React Router" },
-          { Icon: SiGreensock, label: "GSAP Animations" },
-        ],
-      },
-      {
-        title: "Backend & APIs",
-        icons: [
-          { Icon: SiAppwrite, label: "Appwrite Backend" },
-          { Icon: FaJava, label: "Java Fundamentals" },
-          { Icon: FaGitAlt, label: "Git & GitHub" },
-        ],
-      },
-      {
-        title: "Currently Exploring",
-        icons: [
-          { Icon: SiNextdotjs, label: "Next.js" },
-          { Icon: SiThreedotjs, label: "Three.js" },
-        ],
-      },
-    ],
+    title: "Full-Stack Developer & AI Agent Developer",
+    stage: "Kargar Business Services — 2026 – Present",
+    description:
+      "Building production web applications and business websites, integrating backend services and databases, and developing AI-powered workflows and agent integrations for real clients.",
   },
   {
-    title: "experience",
-    icon: HiOutlineBriefcase,
-    accent: "#34d399",
-    glow: "rgba(52,211,153,0.18)",
-    info: [
-      {
-        title: "Full Stack Web Developer",
-        stage: "2023 – Present",
-        description:
-          "Developing full-stack and frontend web applications using React.js, JavaScript, Tailwind CSS, and backend services. Focused on building responsive user interfaces, integrating APIs, and implementing modern UI animations.",
-      },
-      {
-        title: "VeriMart – AI Shopping Assistant",
-        stage: "2024 – Present",
-        description:
-          "Building an AI-powered shopping assistant for the Avishkar state-level innovation competition featuring AI product recommendations, price comparison, and intelligent product discovery.",
-      },
-    ],
-  },
-  {
-    title: "education",
-    icon: HiOutlineAcademicCap,
-    accent: "#f472b6",
-    glow: "rgba(244,114,182,0.18)",
-    info: [
-      {
-        title: "Bachelor of Computer Applications (BCA)",
-        stage: "2023 – 2026",
-        description: `${personalInfo.education.college}, ${personalInfo.education.university}`,
-      },
-      {
-        title: "Technical Self-Learning",
-        stage: "Ongoing",
-        description:
-          "Focused on advanced React development, JavaScript fundamentals, Data Structures preparation, and modern web technologies.",
-      },
-    ],
-  },
-  {
-    title: "goals",
-    icon: HiOutlineLightBulb,
-    accent: "#fbbf24",
-    glow: "rgba(251,191,36,0.18)",
-    info: [
-      {
-        title: "Industry-Ready Full Stack Developer",
-        stage: "Current Focus",
-        description:
-          "Strengthening skills in the MERN stack by building real-world applications and improving system design and frontend performance.",
-      },
-      {
-        title: "Higher Education – MCA",
-        stage: "2026 Plan",
-        description:
-          "Planning to pursue MCA through the Maharashtra MCA CET to deepen knowledge in computer science and software development.",
-      },
-    ],
+    title: "Developer Intern",
+    stage: "Kargar Business Services — 2026",
+    description:
+      "Completed a development internship at Kargar Business Services, which led to a full-time offer for the Full-Stack Developer & AI Agent Developer role above.",
   },
 ];
 
-const stats = [
-  { value: 8, suffix: "+", label: "Projects Built" },
-  { value: 10, suffix: "+", label: "Technologies" },
-  { value: 2, suffix: "+", label: "Years Coding" },
-  { value: 2026, suffix: "", label: "Graduation" },
+const localEducationInfo = [
+  {
+    title: "Bachelor of Computer Applications (BCA)",
+    stage: "2023 – 2026",
+    description: `${personalInfo.education.college}, ${personalInfo.education.university}`,
+  },
 ];
+
+// Not CMS-managed — forward-looking goals stay hand-authored, same as Phase A.
+const goalsInfo = [
+  {
+    title: "Deepen AI Agent Development",
+    stage: "Current Focus",
+    description:
+      "Expanding on AI agent workflows and LLM integrations while shipping production platforms like Skill Guru and other business systems.",
+  },
+  {
+    title: "Higher Education – MCA",
+    stage: "2026 Plan",
+    description:
+      "Planning to pursue MCA through the Maharashtra MCA CET to deepen knowledge in computer science and software development.",
+  },
+];
+
+// Always shown alongside the CMS-backed education entries — self-learning isn't a
+// formal enrollment, so it isn't modeled as an `education` table row.
+const selfLearningEntry = {
+  title: "Technical Self-Learning",
+  stage: "Ongoing",
+  description:
+    "Focused on advanced React/Next.js development, AI agent integrations, and modern web technologies alongside professional work.",
+};
+
+function buildStats(projectsData, skillCount) {
+  return [
+    { value: projectsData.length, suffix: "+", label: "Projects Built" },
+    { value: skillCount, suffix: "+", label: "Technologies" },
+    {
+      value: projectsData.filter((p) => p.tier === "industry").length,
+      suffix: "",
+      label: "Industry Projects",
+    },
+    { value: 2026, suffix: "", label: "Graduation" },
+  ];
+}
 
 /* ─────────────────────────────────────────────────────────────
    STAT CARD
@@ -320,7 +349,28 @@ const InfoEntry = ({ item, index: i, total, accent }) => {
 ───────────────────────────────────────────────────────────── */
 const About = () => {
   const [index, setIndex] = useState(0);
-  const currentTab = useMemo(() => aboutData[index], [index]);
+
+  const { data: projectsData } = useCmsData(fetchProjects, localProjectsData);
+  const { data: skillGroups } = useCmsData(fetchSkillGroups, localSkillGroups);
+  const { data: experienceInfo } = useCmsData(fetchExperiences, localExperienceInfo);
+  const { data: educationRows } = useCmsData(fetchEducation, localEducationInfo);
+
+  const skillsInfo = useMemo(() => buildSkillInfoGroups(skillGroups), [skillGroups]);
+  const educationInfo = useMemo(() => [...educationRows, selfLearningEntry], [educationRows]);
+  const skillCount = useMemo(() => Object.values(skillGroups).flat().length, [skillGroups]);
+  const stats = useMemo(() => buildStats(projectsData, skillCount), [projectsData, skillCount]);
+
+  const aboutData = useMemo(
+    () => [
+      { ...TAB_META[0], info: skillsInfo },
+      { ...TAB_META[1], info: experienceInfo },
+      { ...TAB_META[2], info: educationInfo },
+      { ...TAB_META[3], info: goalsInfo },
+    ],
+    [skillsInfo, experienceInfo, educationInfo]
+  );
+
+  const currentTab = useMemo(() => aboutData[index], [index, aboutData]);
   const handleTabClick = useCallback((i) => setIndex(i), []);
   const handleResumeDownload = useCallback(() => {
     const link = document.createElement("a");
@@ -333,8 +383,6 @@ const About = () => {
 
   return (
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');`}</style>
-
       <div className="relative min-h-screen py-28 xl:py-32 text-center xl:text-left overflow-hidden">
         {/* Ambient blobs */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -426,16 +474,17 @@ const About = () => {
               >
                 I am a{" "}
                 <span className="text-white/90 font-medium">
-                  Full Stack Developer
+                  Full-Stack Developer &amp; AI Agent Developer
                 </span>{" "}
-                specializing in modern web application development using{" "}
-                <span className="text-white/90 font-medium">React.js</span> and{" "}
-                <span className="text-white/90 font-medium">JavaScript</span>.
-                Currently building{" "}
-                <span className="text-accent font-medium">VeriMart</span> — an
-                AI-powered shopping assistant demonstrating product
-                recommendation systems, price comparison, and intelligent user
-                interaction.
+                at{" "}
+                <span className="text-white/90 font-medium">
+                  Kargar Business Services
+                </span>
+                , where I build production business websites, integrate
+                backend services, and develop AI-powered workflows. Currently
+                building{" "}
+                <span className="text-accent font-medium">Skill Guru</span>,
+                an EdTech platform, alongside other business systems.
               </motion.p>
 
               {/* Stats Grid */}

@@ -1,19 +1,18 @@
-"use client";
 export const dynamic = "force-static";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { usePathname } from "next/navigation";
-import Transition from "../../components/Transition";
+import PageTransition from "../../components/PageTransition";
 import Achievements from "../../components/pages/Achievements";
 
+export const metadata = {
+  title: "Achievements",
+  description:
+    "Competitions, research convention placements, and certifications earned by Abhishek Nagargoje.",
+};
+
 export default function AchievementsPage() {
-  const pathname = usePathname();
   return (
-    <AnimatePresence mode="wait">
-      <motion.div key={pathname} className="h-full">
-        <Transition />
-        <Achievements />
-      </motion.div>
-    </AnimatePresence>
+    <PageTransition>
+      <Achievements />
+    </PageTransition>
   );
 }

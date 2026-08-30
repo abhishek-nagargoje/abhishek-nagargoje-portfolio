@@ -60,7 +60,7 @@ modern-portfolio/
   |- .eslintrc.json
   |- .gitignore
   |- next.config.js
-  |- package-lock.json
+  |- pnpm-lock.yaml
   |- package.json
   |- postcss.config.js
   |- tailwind.config.js

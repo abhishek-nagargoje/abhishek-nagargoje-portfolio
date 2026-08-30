@@ -5,9 +5,17 @@ import { useEffect, useState } from "react";
 import ParticlesContainer from "../ParticlesContainer";
 import ProjectsBtn from "../ProjectsBtn";
 import Avatar from "../Avatar";
-import { personalInfo } from "../../data/personalInfo";
+import { personalInfo, skillsData } from "../../data/personalInfo";
+import { projectsData as localProjectsData } from "../../data/projects";
+import { getProjects, getSkills } from "../../lib/supabase/queries";
+import { mapProjectRows } from "../../lib/supabase/transform";
+import { useCmsData } from "../../lib/supabase/useCmsData";
 
-const quickSkills = ["React.js", "JavaScript", "Tailwind CSS", "GSAP", "Appwrite"];
+const quickSkills = ["React.js", "Next.js", "Tailwind CSS", "Supabase", "AI / LLM APIs"];
+
+const localSkillNames = Object.values(skillsData).flat();
+const fetchProjects = () => getProjects().then(mapProjectRows);
+const fetchSkillNames = () => getSkills().then((rows) => (rows || []).map((r) => r.name));
 
 const Counter = ({ to, suffix = "" }) => {
   const count = useMotionValue(0);
@@ -15,7 +23,7 @@ const Counter = ({ to, suffix = "" }) => {
   useEffect(() => {
     const c = animate(count, to, { duration: 2, ease: "easeOut" });
     return c.stop;
-  }, []);
+  }, [to]);
   return <motion.span>{rounded}</motion.span>;
 };
 
@@ -36,12 +44,32 @@ const slideIn = {
 
 export default function Home() {
   const [hovered, setHovered] = useState(null);
+  const { data: projectsData } = useCmsData(fetchProjects, localProjectsData);
+  const { data: skillNames } = useCmsData(fetchSkillNames, localSkillNames);
+
+  // This is a long-lived static export (built once, served for months on
+  // GitHub Pages) — reading the year directly during render would diverge
+  // between the build-time server HTML and a later client hydration once the
+  // calendar rolls over. Deferring to a post-mount effect keeps the first
+  // client render identical to the static HTML, so there's nothing to
+  // reconcile; suppressHydrationWarning is not needed because no mismatch
+  // is ever presented to React.
+  const [year, setYear] = useState(null);
+  useEffect(() => {
+    // Deliberate: initial state (null) matches the static server HTML on
+    // every build, so this update never causes a client/server mismatch —
+    // it just fills in the real year after mount. See comment above.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setYear(new Date().getFullYear());
+  }, []);
+
+  const industryCount = projectsData.filter((p) => p.tier === "industry").length;
+  const technologyCount = new Set(skillNames).size;
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#060a14]">
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800;900&family=Inter:wght@300;400;500&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
         html, body { overflow: hidden; height: 100%; margin: 0; }
         ::-webkit-scrollbar { display: none; }
@@ -87,7 +115,7 @@ export default function Home() {
                 className="text-[11px] uppercase tracking-[0.25em] text-violet-400 font-semibold"
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
-                Portfolio · {new Date().getFullYear()}
+                Portfolio{year ? ` · ${year}` : ""}
               </span>
             </motion.div>
 
@@ -97,7 +125,7 @@ export default function Home() {
               className="text-white/40 text-sm mb-2 tracking-wide"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
-              Hello, I'm
+              Hello, I&apos;m
             </motion.p>
 
             {/* Name — controlled size */}
@@ -120,7 +148,7 @@ export default function Home() {
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
                 <span className="w-[7px] h-[7px] rounded-full bg-violet-400 animate-pulse flex-shrink-0" />
-                {personalInfo.role.split("|")[0].trim()}
+                {personalInfo.role}
               </span>
             </motion.div>
 
@@ -130,11 +158,10 @@ export default function Home() {
               className="text-white/55 text-[0.9rem] leading-[1.75] max-w-[500px] mb-6"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
-              <span className="text-white/80 font-medium">{personalInfo.education.degree}</span>{" "}
-              student at{" "}
-              <span className="text-white/80 font-medium">{personalInfo.education.college}</span> —
-              crafting modern web experiences with React, Tailwind CSS &amp; GSAP. Currently
-              building a state-level AI shopping assistant.
+              Building production-ready web applications, business platforms, and
+              AI-powered solutions at{" "}
+              <span className="text-white/80 font-medium">{personalInfo.company}</span>{" "}
+              with modern technologies like React, Next.js &amp; Tailwind CSS.
             </motion.p>
 
             {/* Skills */}
@@ -166,9 +193,9 @@ export default function Home() {
             {/* Stats */}
             <motion.div variants={fadeUp} className="flex items-center gap-8 mb-8">
               {[
-                { label: "Projects", value: 12, suffix: "+" },
-                { label: "Technologies", value: 8, suffix: "+" },
-                { label: "Months Exp.", value: 18, suffix: "" },
+                { label: "Projects", value: projectsData.length, suffix: "+" },
+                { label: "Technologies", value: technologyCount, suffix: "+" },
+                { label: "Industry Projects", value: industryCount, suffix: "" },
               ].map(({ label, value, suffix }, i) => (
                 <div key={label} className="flex flex-col">
                   <span

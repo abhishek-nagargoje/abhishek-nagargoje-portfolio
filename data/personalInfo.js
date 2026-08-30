@@ -6,8 +6,10 @@ export const personalInfo = {
   username: "N-Abhishek-S",
   location: "Parli Vaidyanath, Maharashtra, India",
 
-  role: "Full Stack Developer (MERN) | React.js Developer",
-  tagline: "Building scalable web applications with the MERN stack",
+  role: "Full-Stack Developer & AI Agent Developer",
+  tagline: "Building production-ready web applications, business platforms, and AI-powered solutions",
+
+  company: "Kargar Business Services",
 
   email: "nagargojeabhishek96@gmail.com",
 
@@ -26,47 +28,51 @@ export const personalInfo = {
   },
 
   // About Summary
-  aboutSummary: `Full Stack Developer specializing in the MERN stack with strong focus on building modern, responsive, and scalable web applications. 
-  Experienced in developing real-world projects using React.js, Node.js, Express.js, and MongoDB. 
-  Skilled in creating performance-focused user interfaces using Tailwind CSS and GSAP animations. 
-  Currently developing an AI-powered shopping assistant platform with features like product recommendations, 
-  price comparison, and AI-driven user interaction for a state-level innovation competition.`,
+  aboutSummary: `Full-Stack Developer & AI Agent Developer working at Kargar Business Services.
+  I build production web applications and business websites using React.js, Next.js, and Tailwind CSS,
+  integrate backend services with Supabase and Appwrite, and develop AI-powered workflows and agent
+  integrations. Currently building larger platforms including Skill Guru, an EdTech platform.`,
 
   // Resume path
-  resumePath: "/resume.pdf",
+  resumePath: "/Abhishek_MERN_Resume.pdf",
 };
 
-// Skills Data
+// Skills Data — grouped, no fabricated proficiency percentages
 export const skillsData = {
   frontend: [
-    { name: "React.js", level: 85 },
-    { name: "JavaScript (ES6+)", level: 85 },
-    { name: "Tailwind CSS v4", level: 90 },
-    { name: "React Router DOM", level: 80 },
-    { name: "GSAP Animations", level: 75 },
-    { name: "Responsive UI Development", level: 85 },
+    "React.js",
+    "Next.js",
+    "JavaScript (ES6+)",
+    "Tailwind CSS",
+    "React Router DOM",
+    "GSAP Animations",
+    "Responsive UI Development",
   ],
 
   backend: [
-    { name: "Node.js", level: 70 },
-    { name: "Express.js", level: 65 },
-    { name: "MongoDB", level: 65 },
-    { name: "REST API Development", level: 70 },
-    { name: "Appwrite (Backend Services)", level: 70 },
+    "Node.js fundamentals",
+    "REST API Integration",
+    "Authentication flows",
+  ],
+
+  database: [
+    "Supabase",
+    "Appwrite",
+    "PostgreSQL",
+  ],
+
+  aiAutomation: [
+    "AI Agent Development",
+    "LLM / AI API Integration",
+    "OpenAI API",
+    "AI-powered workflows",
   ],
 
   tools: [
-    { name: "Git & GitHub", level: 85 },
-    { name: "VS Code", level: 90 },
-    { name: "Postman", level: 75 },
-    { name: "NPM / Package Management", level: 75 },
-  ],
-
-  learning: [
-    { name: "Next.js", level: 45 },
-    { name: "Three.js", level: 35 },
-    { name: "Java (Data Structures)", level: 50 },
-    { name: "Cybersecurity Fundamentals", level: 35 },
+    "Git & GitHub",
+    "VS Code",
+    "Vercel",
+    "Postman",
   ],
 };
 

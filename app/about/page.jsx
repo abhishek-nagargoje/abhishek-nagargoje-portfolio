@@ -1,19 +1,18 @@
-"use client";
 export const dynamic = "force-static";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { usePathname } from "next/navigation";
-import Transition from "../../components/Transition";
+import PageTransition from "../../components/PageTransition";
 import About from "../../components/pages/About";
 
+export const metadata = {
+  title: "About",
+  description:
+    "Abhishek Nagargoje — Full-Stack Developer & AI Agent Developer at Kargar Business Services, building production web applications and AI-powered solutions.",
+};
+
 export default function AboutPage() {
-  const pathname = usePathname();
   return (
-    <AnimatePresence mode="wait">
-      <motion.div key={pathname} className="h-full">
-        <Transition />
-        <About />
-      </motion.div>
-    </AnimatePresence>
+    <PageTransition>
+      <About />
+    </PageTransition>
   );
 }

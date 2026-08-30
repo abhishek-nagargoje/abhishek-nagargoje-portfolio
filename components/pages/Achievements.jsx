@@ -685,7 +685,6 @@ const Achievements = () => {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
         * { font-family:'Syne',sans-serif; box-sizing:border-box; }
         .mono { font-family:'JetBrains Mono',monospace !important; }
         ::selection { background:rgba(245,158,11,0.3); }

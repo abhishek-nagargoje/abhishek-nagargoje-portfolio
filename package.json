@@ -7,7 +7,7 @@
     "email": "nagargojeabhishek96@gmail.com",
     "url": "https://github.com/N-Abhishek-S"
   },
-  "description": "Personal portfolio of Abhishek Nagargoje – MERN Stack Full Stack Developer building modern web applications using React, Node.js, and JavaScript.",
+  "description": "Personal portfolio of Abhishek Nagargoje – Full-Stack Developer & AI Agent Developer at Kargar Business Services, building production web applications, business platforms, and AI-powered solutions.",
   "keywords": [
     "portfolio",
     "mern",
@@ -35,10 +35,11 @@
     "build": "next build",
     "deploy": "next build && node -e \"require('fs').writeFileSync('out/.nojekyll', '')\" && gh-pages -d out --dotfiles",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
+    "@supabase/supabase-js": "^2.112.3",
     "framer-motion": "^10.12.16",
     "next": "^16.1.6",
     "react": "18.2.0",

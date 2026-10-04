@@ -1,7 +1,7 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo, useState, useCallback } from "react";
-import CountUp from "react-countup";
+import Counter from "../Counter";
 import { FaJs, FaReact, FaJava, FaGitAlt } from "react-icons/fa";
 import {
   SiNextdotjs,
@@ -27,6 +27,7 @@ import {
 
 import Avatar from "../Avatar";
 import Circles from "../Circles";
+import { assetPath } from "../../utils/assetPath";
 import { fadeIn } from "../../variants";
 import { personalInfo, skillsData } from "../../data/personalInfo";
 import { projectsData as localProjectsData } from "../../data/projects";
@@ -166,7 +167,8 @@ const StatCard = ({ value, suffix, label, delay }) => (
   <motion.div
     variants={fadeIn("up", delay)}
     initial="hidden"
-    animate="show"
+    whileInView="show"
+    viewport={{ once: true, amount: 0.15 }}
     className="relative group flex flex-col items-center justify-center p-5 rounded-2xl
                border border-white/10 bg-white/[0.03]
                hover:border-accent/40 hover:bg-white/[0.06]
@@ -178,7 +180,7 @@ const StatCard = ({ value, suffix, label, delay }) => (
                     to-transparent pointer-events-none"
     />
     <div className="text-3xl font-black text-accent tabular-nums">
-      <CountUp start={0} end={value} duration={2.5} separator="" />
+      <Counter to={value} />
       <span className="text-xl">{suffix}</span>
     </div>
     <div className="mt-1 text-[11px] uppercase tracking-[0.15em] text-white/50 font-medium text-center">
@@ -220,7 +222,7 @@ const SkillChip = ({ Icon, label, accent }) => {
       <span
         className="text-[9px] uppercase tracking-wider transition-colors duration-300"
         style={{
-          color: hovered ? "rgba(255,255,255,.60)" : "rgba(255,255,255,.30)",
+          color: hovered ? "rgba(255,255,255,.75)" : "rgba(255,255,255,.55)",
         }}
       >
         {label}
@@ -232,7 +234,7 @@ const SkillChip = ({ Icon, label, accent }) => {
 /* ─────────────────────────────────────────────────────────────
    TAB BUTTON
 ───────────────────────────────────────────────────────────── */
-const TabBtn = ({ item, active, onClick }) => {
+const TabBtn = ({ item, index, active, onClick, onKeyDown }) => {
   const TabIcon = item.icon;
   return (
     <motion.button
@@ -241,10 +243,14 @@ const TabBtn = ({ item, active, onClick }) => {
       onClick={onClick}
       type="button"
       role="tab"
+      id={`about-tab-${index}`}
       aria-selected={active}
+      aria-controls="about-tabpanel"
+      tabIndex={active ? 0 : -1}
+      onKeyDown={onKeyDown}
       className="relative flex items-center gap-2 px-4 py-2 rounded-full text-xs
                  font-semibold uppercase tracking-widest transition-all duration-300
-                 focus:outline-none focus-visible:ring-2"
+                 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       style={{
         background: active ? `${item.accent}22` : "rgba(255,255,255,0.05)",
         color: active ? item.accent : "rgba(255,255,255,0.50)",
@@ -295,18 +301,18 @@ const InfoEntry = ({ item, index: i, total, accent }) => {
         </div>
 
         <div className="flex-1 min-w-0">
-          <h4
+          <h3
             className="font-semibold text-sm leading-snug mb-1 transition-colors duration-300"
             style={{ color: hovered ? accent : "#f1f5f9" }}
           >
             {item.title}
-          </h4>
+          </h3>
 
           {item.stage && (
             <span
               className="inline-block text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full mb-2"
               style={{
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: "var(--font-mono), monospace",
                 background: `${accent}15`,
                 color: accent,
                 border: `1px solid ${accent}30`,
@@ -347,7 +353,8 @@ const InfoEntry = ({ item, index: i, total, accent }) => {
 /* ─────────────────────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────────────────────── */
-const About = () => {
+const About = ({ embedded = false }) => {
+  const Heading = embedded ? motion.h2 : motion.h1;
   const [index, setIndex] = useState(0);
 
   const { data: projectsData } = useCmsData(fetchProjects, localProjectsData);
@@ -372,22 +379,20 @@ const About = () => {
 
   const currentTab = useMemo(() => aboutData[index], [index, aboutData]);
   const handleTabClick = useCallback((i) => setIndex(i), []);
-  const handleResumeDownload = useCallback(() => {
-    const link = document.createElement("a");
-    link.href = "/Abhishek_MERN_Resume.pdf";
-    link.download = "Abhishek_MERN_Resume.pdf";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }, []);
 
   return (
     <>
-      <div className="relative min-h-screen py-28 xl:py-32 text-center xl:text-left overflow-hidden">
-        {/* Ambient blobs */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px]" />
-          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px]" />
+      <section
+        id="about"
+        aria-labelledby="about-title"
+        className={`relative bg-site bg-cover bg-center text-center xl:text-left overflow-hidden ${
+          embedded ? "py-20 xl:py-28" : "min-h-screen py-28 xl:py-32"
+        }`}
+      >
+        {/* Ambient blobs — radial gradients (no filter blur) */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
+          <div className="absolute -top-40 left-[10%] w-[800px] h-[800px] rounded-full bg-[radial-gradient(circle,rgba(241,48,36,0.06)_0%,transparent_60%)]" />
+          <div className="absolute -bottom-40 right-[10%] w-[700px] h-[700px] rounded-full bg-[radial-gradient(circle,rgba(168,85,247,0.06)_0%,transparent_60%)]" />
           <div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
                           w-[800px] h-[800px] bg-gradient-radial from-accent/[0.03] to-transparent rounded-full"
@@ -396,11 +401,14 @@ const About = () => {
 
         <Circles />
 
-        {/* Avatar */}
+        {/* Avatar — standalone page only; on the single-page home the hero
+            already shows it, and here it sat on top of the bio/stats. */}
+        {!embedded && (
         <motion.div
           variants={fadeIn("right", 0.2)}
           initial="hidden"
-          animate="show"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.15 }}
           exit="hidden"
           className="hidden xl:flex absolute bottom-0 left-0 w-[380px] h-[520px] pointer-events-none"
           style={{
@@ -415,6 +423,7 @@ const About = () => {
         >
           <Avatar />
         </motion.div>
+        )}
 
         <div className="container mx-auto px-4 xl:px-8 h-full">
           <div className="flex flex-col xl:flex-row gap-12 xl:gap-16 items-start">
@@ -424,7 +433,8 @@ const About = () => {
               <motion.div
                 variants={fadeIn("down", 0.1)}
                 initial="hidden"
-                animate="show"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.15 }}
                 className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full
                            border border-accent/30 bg-accent/5 text-accent
                            text-xs font-mono uppercase tracking-widest w-fit mx-auto xl:mx-0"
@@ -434,10 +444,12 @@ const About = () => {
               </motion.div>
 
               {/* Heading */}
-              <motion.h2
+              <Heading
+                id="about-title"
                 variants={fadeIn("right", 0.2)}
                 initial="hidden"
-                animate="show"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.15 }}
                 exit="hidden"
                 className="text-4xl xl:text-5xl font-black leading-[1.1] mb-6 tracking-tight"
               >
@@ -447,7 +459,8 @@ const About = () => {
                   <motion.span
                     className="absolute -bottom-1 left-0 h-[3px] bg-gradient-to-r from-accent to-cyan-400 rounded-full"
                     initial={{ width: 0 }}
-                    animate={{ width: "100%" }}
+                    whileInView={{ width: "100%" }}
+                    viewport={{ once: true }}
                     transition={{ delay: 0.8, duration: 0.6, ease: "easeOut" }}
                   />
                 </span>{" "}
@@ -463,13 +476,14 @@ const About = () => {
                   with React & JavaScript
                 </span>
                 <span className="text-accent">.</span>
-              </motion.h2>
+              </Heading>
 
               {/* ── BIO — updated text only, structure identical ── */}
               <motion.p
                 variants={fadeIn("right", 0.4)}
                 initial="hidden"
-                animate="show"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.15 }}
                 className="text-white/60 text-base leading-relaxed mb-10 max-w-[480px] mx-auto xl:mx-0"
               >
                 I am a{" "}
@@ -495,14 +509,15 @@ const About = () => {
               </div>
 
               {/* Download CTA */}
-              <motion.button
+              <motion.a
+                href={assetPath("/Abhishek_MERN_Resume.pdf")}
+                download="Abhishek_MERN_Resume.pdf"
                 variants={fadeIn("up", 0.7)}
                 initial="hidden"
-                animate="show"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.15 }}
                 whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.97 }}
-                onClick={handleResumeDownload}
-                type="button"
                 className="group relative flex items-center justify-center gap-3
                            w-full xl:w-auto xl:px-10 py-4 rounded-2xl
                            font-bold text-primary text-sm uppercase tracking-widest
@@ -513,14 +528,15 @@ const About = () => {
                 <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12" />
                 <HiOutlineDownload className="relative text-lg" />
                 <span className="relative">Download Resume</span>
-              </motion.button>
+              </motion.a>
             </div>
 
             {/* ══ RIGHT COLUMN ══ */}
             <motion.div
               variants={fadeIn("left", 0.3)}
               initial="hidden"
-              animate="show"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.15 }}
               exit="hidden"
               className="flex flex-col w-full xl:w-[48%] z-10"
             >
@@ -534,15 +550,23 @@ const About = () => {
                   <TabBtn
                     key={item.title}
                     item={item}
+                    index={i}
                     active={index === i}
                     onClick={() => handleTabClick(i)}
+                    onKeyDown={(e) => {
+                      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+                      e.preventDefault();
+                      const next = (i + (e.key === "ArrowRight" ? 1 : -1) + aboutData.length) % aboutData.length;
+                      handleTabClick(next);
+                      document.getElementById(`about-tab-${next}`)?.focus();
+                    }}
                   />
                 ))}
               </div>
 
               {/* Panel */}
               <div
-                className="relative rounded-2xl backdrop-blur-xl overflow-hidden min-h-[420px]"
+                className="relative rounded-2xl overflow-hidden min-h-[420px]"
                 style={{
                   background: "rgba(255,255,255,0.02)",
                   border: `1px solid ${currentTab.accent}28`,
@@ -594,6 +618,8 @@ const About = () => {
                       exit={{ opacity: 0, y: -16 }}
                       transition={{ duration: 0.25, ease: "easeOut" }}
                       role="tabpanel"
+                      id="about-tabpanel"
+                      aria-labelledby={`about-tab-${index}`}
                       className="space-y-1"
                     >
                       {currentTab.info.map((item, i) => (
@@ -619,8 +645,9 @@ const About = () => {
               {/* Footer hint */}
               <motion.p
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
                 className="mt-3 text-center text-[10px] font-mono text-white/20 uppercase tracking-widest"
               >
                 Scroll to explore · Click tabs to navigate
@@ -628,7 +655,7 @@ const About = () => {
             </motion.div>
           </div>
         </div>
-      </div>
+      </section>
     </>
   );
 };

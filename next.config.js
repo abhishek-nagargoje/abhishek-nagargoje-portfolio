@@ -15,6 +15,9 @@ const nextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
+  // Pin the workspace root: a stray lockfile in the user's home directory
+  // otherwise makes Turbopack guess the wrong root.
+  turbopack: { root: __dirname },
   env: {
     NEXT_PUBLIC_BASE_PATH: isGithubPagesBuild ? `/${repo}` : "",
   },

@@ -1,6 +1,6 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   HiOutlineTrophy,
   HiOutlineBookOpen,
@@ -29,7 +29,7 @@ const achievementsData = {
       status: "1st Place",
       year: "2025",
       project: "AI Shopping Assistant",
-      proof: `${BASE}/Dis_Level.jpeg`,
+      proof: `${BASE}/Dis_Level.webp`,
       proofLabel: "View Certificate",
     },
     {
@@ -41,8 +41,8 @@ const achievementsData = {
       status: "3rd Place",
       year: "2025",
       project: "AI Shopping Assistant",
-      proof: `${BASE}/Region_level.jpeg`,
-      medal: `${BASE}/Medil.jpeg`,
+      proof: `${BASE}/Region_level.webp`,
+      medal: `${BASE}/Medil.webp`,
       proofLabel: "View Certificate",
     },
     {
@@ -54,7 +54,7 @@ const achievementsData = {
       status: "Participant",
       year: "2026",
       project: "AI-Driven Commerce & Smart Health Platform",
-      proof: `${BASE}/state_level.jpeg`,
+      proof: `${BASE}/state_level.webp`,
       proofLabel: "View Certificate",
     },
   ],
@@ -68,7 +68,7 @@ const achievementsData = {
       status: "Completed",
       year: "Feb 2026",
       issuer: "be10x",
-      proof: `${BASE}/Benx10_Certificate.jpg`,
+      proof: `${BASE}/Benx10_Certificate.webp`,
       proofLabel: "View Certificate",
     },
     {
@@ -80,7 +80,7 @@ const achievementsData = {
       status: "Completed",
       year: "Feb 2026",
       issuer: "OfficeMaster",
-      proof: `${BASE}/PowerBi_Certificate.jpg`,
+      proof: `${BASE}/PowerBi_Certificate.webp`,
       proofLabel: "View Certificate",
     },
     {
@@ -92,7 +92,7 @@ const achievementsData = {
       status: "Completed",
       year: "Feb 2026",
       issuer: "OfficeMaster",
-      proof: `${BASE}/Excel_Certificate.jpg`,
+      proof: `${BASE}/Excel_Certificate.webp`,
       proofLabel: "View Certificate",
     },
   ],
@@ -122,7 +122,7 @@ const STATUS_CONFIG = {
 const GridBackground = () => (
   <div
     aria-hidden
-    className="pointer-events-none fixed inset-0 z-0"
+    className="pointer-events-none absolute inset-0 z-0"
     style={{
       backgroundImage: `linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px)`,
       backgroundSize: "72px 72px",
@@ -139,7 +139,7 @@ const AmbientGlow = ({ type }) => {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+      className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
     >
       <div
         style={{
@@ -150,7 +150,6 @@ const AmbientGlow = ({ type }) => {
           height: "560px",
           borderRadius: "50%",
           background: `radial-gradient(circle,${c1} 0%,transparent 70%)`,
-          filter: "blur(50px)",
           transition: "background 0.6s",
         }}
       />
@@ -163,7 +162,6 @@ const AmbientGlow = ({ type }) => {
           height: "480px",
           borderRadius: "50%",
           background: `radial-gradient(circle,${c2} 0%,transparent 70%)`,
-          filter: "blur(60px)",
           transition: "background 0.6s",
         }}
       />
@@ -188,13 +186,27 @@ const StatusPill = ({ status }) => {
 };
 
 // ── Certificate Lightbox ──────────────────────────────────────────────────────
-const CertLightbox = ({ src, title, onClose }) => (
+const CertLightbox = ({ src, title, onClose }) => {
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+      // Close is the dialog's only focusable control: keep focus on it.
+      if (e.key === "Tab") e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
   <motion.div
+    role="dialog"
+    aria-modal="true"
+    aria-label={title}
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
     className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-10"
-    style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(16px)" }}
+    style={{ background: "rgba(0,0,0,0.92)" }}
     onClick={onClose}
   >
     <motion.div
@@ -213,6 +225,8 @@ const CertLightbox = ({ src, title, onClose }) => (
           {title}
         </p>
         <button
+          type="button"
+          autoFocus
           onClick={onClose}
           className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all duration-200"
           style={{
@@ -233,6 +247,8 @@ const CertLightbox = ({ src, title, onClose }) => (
         </button>
       </div>
       <img
+        loading="lazy"
+        decoding="async"
         src={src}
         alt={title}
         className="w-full rounded-2xl object-contain"
@@ -245,6 +261,7 @@ const CertLightbox = ({ src, title, onClose }) => (
     </motion.div>
   </motion.div>
 );
+};
 
 // ── Achievement Card with Certificate Photo ───────────────────────────────────
 const AchievementCard = ({ achievement, type, index, onViewProof }) => {
@@ -255,7 +272,8 @@ const AchievementCard = ({ achievement, type, index, onViewProof }) => {
   return (
     <motion.article
       initial={{ opacity: 0, y: 28 }}
-      animate={{ opacity: 1, y: 0 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
       exit={{ opacity: 0, y: -16 }}
       transition={{
         duration: 0.45,
@@ -271,15 +289,16 @@ const AchievementCard = ({ achievement, type, index, onViewProof }) => {
         border: hovered
           ? `1px solid ${theme.iconColor}66`
           : "1px solid rgba(255,255,255,0.08)",
-        backdropFilter: "blur(20px)",
         boxShadow: hovered
           ? `0 0 40px ${theme.glow},0 20px 60px rgba(0,0,0,0.5)`
           : "0 4px 24px rgba(0,0,0,0.2)",
         transition: "border-color 0.3s ease,box-shadow 0.3s ease",
       }}
     >
-      {/* ── Certificate Image Preview ── */}
+      {/* ── Certificate Image Preview ──
+          Mouse shortcut only; the keyboard/AT path is the buttons below. */}
       <div
+        aria-hidden="true"
         className="relative overflow-hidden"
         style={{
           height: "200px",
@@ -295,6 +314,8 @@ const AchievementCard = ({ achievement, type, index, onViewProof }) => {
         {achievement.proof && !imgError ? (
           <>
             <img
+              loading="lazy"
+              decoding="async"
               src={achievement.proof}
               alt={achievement.title}
               onError={() => setImgError(true)}
@@ -337,6 +358,8 @@ const AchievementCard = ({ achievement, type, index, onViewProof }) => {
                   </div>
                   {achievement.medal && (
                     <button
+                      type="button"
+                      tabIndex={-1}
                       onClick={(e) => {
                         e.stopPropagation();
                         onViewProof(
@@ -367,8 +390,7 @@ const AchievementCard = ({ achievement, type, index, onViewProof }) => {
                 background: "rgba(0,0,0,0.6)",
                 color: "rgba(255,255,255,0.7)",
                 border: "1px solid rgba(255,255,255,0.1)",
-                fontFamily: "'JetBrains Mono',monospace",
-                backdropFilter: "blur(8px)",
+                fontFamily: "var(--font-mono), monospace",
               }}
             >
               <HiOutlineCalendar style={{ color: theme.iconColor }} />
@@ -481,7 +503,7 @@ const AchievementCard = ({ achievement, type, index, onViewProof }) => {
             <span
               style={{
                 color: theme.iconColor,
-                fontFamily: "'JetBrains Mono',monospace",
+                fontFamily: "var(--font-mono), monospace",
                 fontSize: "0.7rem",
               }}
             >
@@ -492,6 +514,7 @@ const AchievementCard = ({ achievement, type, index, onViewProof }) => {
 
         {achievement.proof && (
           <button
+            type="button"
             onClick={() => onViewProof(achievement.proof, achievement.title)}
             className="mt-auto flex items-center justify-center gap-2 w-full py-2 rounded-xl text-xs font-medium transition-all duration-200"
             style={{
@@ -506,6 +529,21 @@ const AchievementCard = ({ achievement, type, index, onViewProof }) => {
             {achievement.proofLabel || "View Certificate"}
           </button>
         )}
+
+        {achievement.medal && (
+          <button
+            type="button"
+            onClick={() => onViewProof(achievement.medal, "Medal — " + achievement.title)}
+            className="flex items-center justify-center gap-2 w-full py-2 rounded-xl text-xs font-medium transition-colors duration-200"
+            style={{
+              background: "rgba(245,158,11,0.08)",
+              color: "#fbbf24",
+              border: "1px solid rgba(245,158,11,0.25)",
+            }}
+          >
+            🏅 View Medal
+          </button>
+        )}
       </div>
     </motion.article>
   );
@@ -515,7 +553,8 @@ const AchievementCard = ({ achievement, type, index, onViewProof }) => {
 const AavishkarSpotlight = ({ onViewProof }) => (
   <motion.section
     initial={{ opacity: 0, y: 40 }}
-    animate={{ opacity: 1, y: 0 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, amount: 0.15 }}
     transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
     className="mt-24 rounded-3xl overflow-hidden relative"
     style={{
@@ -612,14 +651,16 @@ const AavishkarSpotlight = ({ onViewProof }) => (
           </p>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { src: `${BASE}/Dis_Level.jpeg`, label: "District Cert 🥇" },
-              { src: `${BASE}/Region_level.jpeg`, label: "University Cert 🥉" },
-              { src: `${BASE}/state_level.jpeg`, label: "State Cert" },
-              { src: `${BASE}/Medil.jpeg`, label: "🏅 Medal" },
+              { src: `${BASE}/Dis_Level.webp`, label: "District Cert 🥇" },
+              { src: `${BASE}/Region_level.webp`, label: "University Cert 🥉" },
+              { src: `${BASE}/state_level.webp`, label: "State Cert" },
+              { src: `${BASE}/Medil.webp`, label: "🏅 Medal" },
             ].map(({ src, label }) => (
-              <div
+              <button
+                type="button"
                 key={src}
-                className="flex flex-col items-center gap-1.5 cursor-pointer group"
+                aria-label={`View ${label.replace(/[^\p{L}\p{N} ]/gu, "").trim()}`}
+                className="flex flex-col items-center gap-1.5 cursor-pointer group rounded-xl"
                 onClick={() => onViewProof(src, label)}
               >
                 <div
@@ -632,6 +673,8 @@ const AavishkarSpotlight = ({ onViewProof }) => (
                   }}
                 >
                   <img
+                    loading="lazy"
+                    decoding="async"
                     src={src}
                     alt={label}
                     className="w-full h-full"
@@ -665,7 +708,7 @@ const AavishkarSpotlight = ({ onViewProof }) => (
                 >
                   {label}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -675,26 +718,29 @@ const AavishkarSpotlight = ({ onViewProof }) => (
 );
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
-const Achievements = () => {
+const Achievements = ({ embedded = false }) => {
+  const Title = embedded ? motion.h2 : motion.h1;
   const [activeTab, setActiveTab] = useState("competitions");
   const [lightbox, setLightbox] = useState(null);
 
-  const openProof = (src, title) => setLightbox({ src, title });
-  const closeProof = () => setLightbox(null);
+  const returnFocusTo = useRef(null);
+  const openProof = (src, title) => {
+    returnFocusTo.current = document.activeElement;
+    setLightbox({ src, title });
+  };
+  const closeProof = () => {
+    setLightbox(null);
+    returnFocusTo.current?.focus?.();
+  };
 
   return (
     <>
-      <style>{`
-        * { font-family:'Syne',sans-serif; box-sizing:border-box; }
-        .mono { font-family:'JetBrains Mono',monospace !important; }
-        ::selection { background:rgba(245,158,11,0.3); }
-        ::-webkit-scrollbar { width:6px; background:transparent; }
-        ::-webkit-scrollbar-thumb { background:rgba(245,158,11,0.35); border-radius:3px; }
-      `}</style>
 
-      <div
-        className="relative min-h-screen"
-        style={{ background: "#080b14", color: "#f1f5f9" }}
+      <section
+        id="achievements"
+        aria-labelledby="achievements-title"
+        className={`relative font-syne-scope overflow-hidden ${embedded ? "" : "min-h-screen"}`}
+        style={{ background: "#080b14", color: "#f1f5f9", "--selection": "rgba(245,158,11,0.3)" }}
       >
         <GridBackground />
         <AmbientGlow type={activeTab} />
@@ -709,21 +755,24 @@ const Achievements = () => {
           )}
         </AnimatePresence>
 
-        <div className="relative z-10 max-w-6xl mx-auto px-6 py-28 md:py-36">
+        <div className={`relative z-10 max-w-6xl mx-auto px-6 ${embedded ? "py-20 md:py-28" : "py-28 md:py-36"}`}>
           {/* Header */}
           <div className="mb-16">
             <motion.p
               initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.5 }}
               className="text-xs uppercase tracking-widest mb-4"
               style={{ color: "#fbbf24", letterSpacing: "0.14em" }}
             >
               Recognition
             </motion.p>
-            <motion.h1
+            <Title
+              id="achievements-title"
               initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{
                 duration: 0.6,
                 delay: 0.1,
@@ -743,13 +792,14 @@ const Achievements = () => {
                 Achievements
               </span>
               <span style={{ color: "#fbbf24" }}>.</span>
-            </motion.h1>
+            </Title>
             <motion.p
               initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               className="max-w-lg text-base leading-relaxed"
-              style={{ color: "rgba(255,255,255,0.4)" }}
+              style={{ color: "rgba(255,255,255,0.6)" }}
             >
               From district podiums to state conventions — a record of
               competitions and certified workshops.
@@ -759,10 +809,12 @@ const Achievements = () => {
           {/* Tabs */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.15 }}
             transition={{ duration: 0.5, delay: 0.25 }}
             className="flex flex-wrap gap-2 mb-12"
-            role="tablist"
+            role="group"
+            aria-label="Filter"
           >
             {achievementCategories.map((cat) => {
               const active = activeTab === cat.id;
@@ -772,10 +824,10 @@ const Achievements = () => {
               return (
                 <button
                   key={cat.id}
-                  role="tab"
-                  aria-selected={active}
+                  type="button"
+                  aria-pressed={active}
                   onClick={() => setActiveTab(cat.id)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-250 focus:outline-none"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-250 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
                   style={{
                     background: active
                       ? `${theme.iconColor}22`
@@ -800,7 +852,8 @@ const Achievements = () => {
             <motion.div
               key={activeTab}
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true, amount: 0.15 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
@@ -822,7 +875,8 @@ const Achievements = () => {
 
           <motion.p
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, amount: 0.15 }}
             transition={{ duration: 0.5, delay: 0.5 }}
             className="mt-10 text-center text-xs"
             style={{ color: "rgba(255,255,255,0.2)" }}
@@ -830,7 +884,7 @@ const Achievements = () => {
             Click any certificate image to view it full screen.
           </motion.p>
         </div>
-      </div>
+      </section>
     </>
   );
 };

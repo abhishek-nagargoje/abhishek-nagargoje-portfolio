@@ -26,7 +26,7 @@ const accentFor = (tier) => TIER_ACCENT[tier] || TIER_ACCENT.personal;
 const GridBackground = () => (
   <div
     aria-hidden
-    className="pointer-events-none fixed inset-0 z-0"
+    className="pointer-events-none absolute inset-0 z-0"
     style={{
       backgroundImage: `
         linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
@@ -38,18 +38,16 @@ const GridBackground = () => (
 );
 
 const AmbientGlow = () => (
-  <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+  <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
     <div style={{
       position:"absolute", top:"-20%", right:"-10%",
       width:"600px", height:"600px", borderRadius:"50%",
       background:"radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)",
-      filter:"blur(40px)",
     }} />
     <div style={{
       position:"absolute", bottom:"10%", left:"-5%",
       width:"500px", height:"500px", borderRadius:"50%",
       background:"radial-gradient(circle, rgba(244,114,182,0.08) 0%, transparent 70%)",
-      filter:"blur(60px)",
     }} />
   </div>
 );
@@ -75,7 +73,7 @@ const ThumbnailFallback = ({ title, accent }) => (
   >
     <span
       className="text-2xl font-black tracking-tight opacity-40"
-      style={{ color: accent.pill, fontFamily: "'Syne', sans-serif" }}
+      style={{ color: accent.pill, fontFamily: "var(--font-syne), sans-serif" }}
     >
       {title.split(" ").map((w) => w[0]).slice(0, 2).join("")}
     </span>
@@ -91,7 +89,8 @@ const ProjectCard = ({ project, index }) => {
   return (
     <motion.article
       initial={{ opacity: 0, y: 32 }}
-      animate={{ opacity: 1, y: 0 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
       exit={{ opacity: 0, y: -16 }}
       transition={{ duration: 0.45, delay: index * 0.07, ease: [0.25, 0.46, 0.45, 0.94] }}
       onMouseEnter={() => setHovered(true)}
@@ -100,7 +99,6 @@ const ProjectCard = ({ project, index }) => {
       style={{
         background: "linear-gradient(135deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.018) 100%)",
         border: hovered ? `1px solid ${accent.pill}55` : "1px solid rgba(255,255,255,0.08)",
-        backdropFilter: "blur(20px)",
         transition: "border-color 0.3s ease, box-shadow 0.3s ease",
         boxShadow: hovered
           ? `0 0 40px ${accent.pill}25, 0 20px 60px rgba(0,0,0,0.4)`
@@ -114,6 +112,8 @@ const ProjectCard = ({ project, index }) => {
       >
         {project.thumbnail ? (
           <img
+            loading="lazy"
+            decoding="async"
             src={project.thumbnail}
             alt={`${project.title} preview`}
             className="w-full h-full object-cover object-top"
@@ -158,15 +158,12 @@ const ProjectCard = ({ project, index }) => {
           <StatusPill status={project.status} />
         </div>
 
-        {/* Hover overlay with action buttons */}
-        <AnimatePresence>
-          {hovered && (project.links.github || project.links.live) && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="absolute inset-0 flex items-center justify-center gap-3"
+        {/* Action links: always in the DOM so keyboard users can reach them;
+            revealed on hover, or when a link inside receives focus. */}
+        {(project.links.github || project.links.live) && (
+            <div
+              className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 transition-opacity duration-200
+                         group-hover:opacity-100 group-focus-within:opacity-100"
             >
               {project.links.github && (
                 <a
@@ -194,9 +191,8 @@ const ProjectCard = ({ project, index }) => {
                   <BsGlobe /> Live Site
                 </a>
               )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+        )}
       </div>
 
       {/* Body */}
@@ -290,7 +286,8 @@ const IndustrySpotlight = ({ industryProjects }) => {
   return (
     <motion.section
       initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
       className="mb-16"
     >
@@ -308,7 +305,8 @@ const IndustrySpotlight = ({ industryProjects }) => {
             <motion.div
               key={project.id}
               initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.55, delay: 0.1 + i * 0.12, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="relative rounded-3xl overflow-hidden"
               style={{
@@ -319,6 +317,8 @@ const IndustrySpotlight = ({ industryProjects }) => {
               <div className="relative w-full overflow-hidden" style={{ height: "160px" }}>
                 {project.thumbnail ? (
                   <img
+                    loading="lazy"
+                    decoding="async"
                     src={project.thumbnail}
                     alt={`${project.title} screenshot`}
                     className="w-full h-full object-cover object-top"
@@ -337,7 +337,7 @@ const IndustrySpotlight = ({ industryProjects }) => {
                 <div className="absolute top-4 left-4">
                   <span
                     className="text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full"
-                    style={{ background: `${accent.pill}20`, color: accent.pill, border: `1px solid ${accent.pill}35`, backdropFilter: "blur(8px)", letterSpacing: "0.1em" }}
+                    style={{ background: `${accent.pill}20`, color: accent.pill, border: `1px solid ${accent.pill}35`, letterSpacing: "0.1em" }}
                   >
                     {project.category}
                   </span>
@@ -414,7 +414,8 @@ const IndustrySpotlight = ({ industryProjects }) => {
 };
 
 // ── Main Page ────────────────────────────────────────────────────────────────
-const Projects = () => {
+const Projects = ({ embedded = false }) => {
+  const Title = embedded ? motion.h2 : motion.h1;
   const [activeTier, setActiveTier] = useState("all");
   const { data: projectsData } = useCmsData(fetchProjects, localProjectsData);
 
@@ -430,24 +431,23 @@ const Projects = () => {
 
   return (
     <>
-      <style>{`
-        * { font-family: 'Syne', sans-serif; box-sizing: border-box; }
-        code, .mono { font-family: 'JetBrains Mono', monospace !important; }
-        ::selection { background: rgba(99,102,241,0.35); }
-        ::-webkit-scrollbar { width: 6px; background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.4); border-radius: 3px; }
-      `}</style>
 
-      <div className="relative min-h-screen" style={{ background: "#080b14", color: "#f1f5f9" }}>
+      <section
+        id="projects"
+        aria-labelledby="projects-title"
+        className={`relative font-syne-scope overflow-hidden ${embedded ? "" : "min-h-screen"}`}
+        style={{ background: "#080b14", color: "#f1f5f9", "--selection": "rgba(99,102,241,0.35)" }}
+      >
         <GridBackground />
         <AmbientGlow />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-6 py-28 md:py-36">
+        <div className={`relative z-10 max-w-6xl mx-auto px-6 ${embedded ? "py-20 md:py-28" : "py-28 md:py-36"}`}>
 
           <div className="mb-16">
             <motion.p
               initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.5 }}
               className="text-xs uppercase tracking-widest mb-4"
               style={{ color: "#818cf8", letterSpacing: "0.14em" }}
@@ -455,9 +455,11 @@ const Projects = () => {
               Portfolio
             </motion.p>
 
-            <motion.h1
+            <Title
+              id="projects-title"
               initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.6, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="text-5xl md:text-7xl font-black tracking-tight leading-none mb-6"
               style={{ color: "#f1f5f9", letterSpacing: "-0.03em" }}
@@ -468,14 +470,15 @@ const Projects = () => {
                 Projects
               </span>
               <span style={{ color: "#6366f1" }}>.</span>
-            </motion.h1>
+            </Title>
 
             <motion.p
               initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               className="max-w-lg text-base leading-relaxed"
-              style={{ color: "rgba(255,255,255,0.45)" }}
+              style={{ color: "rgba(255,255,255,0.6)" }}
             >
               Production business websites built at Kargar Business Services, platforms
               currently in development, and personal / academic projects.
@@ -487,10 +490,12 @@ const Projects = () => {
           {/* ── Filter Tabs ── */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.15 }}
             transition={{ duration: 0.5, delay: 0.25 }}
             className="flex flex-wrap gap-2 mb-12"
-            role="tablist"
+            role="group"
+            aria-label="Filter"
           >
             {projectTiers.map((tier) => {
               const active = activeTier === tier.id;
@@ -501,8 +506,8 @@ const Projects = () => {
               return (
                 <button
                   key={tier.id}
-                  role="tab"
-                  aria-selected={active}
+                  type="button"
+                  aria-pressed={active}
                   onClick={() => setActiveTier(tier.id)}
                   className="px-5 py-2 rounded-full text-sm font-medium transition-all duration-250 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                   style={{
@@ -524,7 +529,8 @@ const Projects = () => {
             <motion.div
               key={activeTier}
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true, amount: 0.15 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
@@ -542,7 +548,7 @@ const Projects = () => {
           </AnimatePresence>
 
         </div>
-      </div>
+      </section>
     </>
   );
 };

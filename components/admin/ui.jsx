@@ -23,7 +23,6 @@ const inputStyle = {
   padding: "9px 12px",
   color: "#f1f5f9",
   fontSize: "0.875rem",
-  outline: "none",
   width: "100%",
 };
 
@@ -64,6 +63,7 @@ export const Button = ({ children, variant = "primary", ...props }) => {
 export const Banner = ({ type = "error", children }) =>
   children ? (
     <div
+      role={type === "error" ? "alert" : "status"}
       className="px-4 py-3 rounded-xl text-sm mb-4"
       style={
         type === "error"

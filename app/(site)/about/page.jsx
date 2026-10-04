@@ -1,9 +1,10 @@
 export const dynamic = "force-static";
 
-import PageTransition from "../../components/PageTransition";
-import About from "../../components/pages/About";
+import PageTransition from "../../../components/PageTransition";
+import About from "../../../components/pages/About";
 
 export const metadata = {
+  alternates: { canonical: "about/" },
   title: "About",
   description:
     "Abhishek Nagargoje — Full-Stack Developer & AI Agent Developer at Kargar Business Services, building production web applications and AI-powered solutions.",

@@ -1,7 +1,6 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef } from "react";
-import emailjs from "@emailjs/browser";
 import { BsArrowRight, BsGithub } from "react-icons/bs";
 import { HiOutlineEnvelope, HiOutlineMapPin, HiOutlineArrowDownTray } from "react-icons/hi2";
 import { RiLinkedinLine } from "react-icons/ri";
@@ -9,6 +8,7 @@ import { personalInfo } from "../../data/personalInfo";
 import { getProfile } from "../../lib/supabase/queries";
 import { mapProfileRow } from "../../lib/supabase/transform";
 import { useCmsData } from "../../lib/supabase/useCmsData";
+import { assetPath } from "../../utils/assetPath";
 
 // ─── 🔑 YOUR EMAILJS CREDENTIALS — fill these in ──────────────────────────────
 const EMAILJS_SERVICE_ID  = "service_g2125im";   // e.g. "service_abc123"
@@ -72,7 +72,7 @@ const buildSocialLinks = (profile) => [
 const GridBackground = () => (
   <div
     aria-hidden
-    className="pointer-events-none fixed inset-0 z-0"
+    className="pointer-events-none absolute inset-0 z-0"
     style={{
       backgroundImage: `
         linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
@@ -85,18 +85,19 @@ const GridBackground = () => (
 
 // ── Ambient blobs ─────────────────────────────────────────────────────────────
 const AmbientGlow = () => (
-  <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-    <div style={{ position:"absolute", top:"-20%", right:"-8%", width:"580px", height:"580px", borderRadius:"50%", background:"radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%)", filter:"blur(50px)" }} />
-    <div style={{ position:"absolute", bottom:"5%", left:"-6%", width:"460px", height:"460px", borderRadius:"50%", background:"radial-gradient(circle, rgba(244,114,182,0.07) 0%, transparent 70%)", filter:"blur(60px)" }} />
+  <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+    <div style={{ position:"absolute", top:"-20%", right:"-8%", width:"580px", height:"580px", borderRadius:"50%", background:"radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%)", }} />
+    <div style={{ position:"absolute", bottom:"5%", left:"-6%", width:"460px", height:"460px", borderRadius:"50%", background:"radial-gradient(circle, rgba(244,114,182,0.07) 0%, transparent 70%)", }} />
   </div>
 );
 
 // ── Field wrapper ─────────────────────────────────────────────────────────────
-const Field = ({ label, children }) => (
+const Field = ({ label, htmlFor, children }) => (
   <div className="flex flex-col gap-1.5">
     <label
+      htmlFor={htmlFor}
       className="text-xs uppercase tracking-widest font-medium"
-      style={{ color: "rgba(255,255,255,0.35)", letterSpacing: "0.1em" }}
+      style={{ color: "rgba(255,255,255,0.6)", letterSpacing: "0.1em" }}
     >
       {label}
     </label>
@@ -112,7 +113,7 @@ const baseInputStyle = {
   padding:     "12px 16px",
   color:       "#f1f5f9",
   fontSize:    "0.9rem",
-  fontFamily:  "'Syne', sans-serif",
+  fontFamily:  "var(--font-syne), sans-serif",
   outline:     "none",
   transition:  "border-color 0.25s ease, box-shadow 0.25s ease",
 };
@@ -213,7 +214,8 @@ const Spinner = () => (
 );
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
-const Contact = () => {
+const Contact = ({ embedded = false }) => {
+  const Title = embedded ? motion.h2 : motion.h1;
   const formRef    = useRef(null);
   const [isLoading,  setIsLoading]  = useState(false);
   const [formStatus, setFormStatus] = useState(null); // null | "success" | "error"
@@ -252,6 +254,9 @@ const Contact = () => {
     }
 
     try {
+      // Loaded on submit only — visitors who never send a message never
+      // download the EmailJS SDK.
+      const { default: emailjs } = await import("@emailjs/browser");
       await emailjs.sendForm(
         EMAILJS_SERVICE_ID,
         EMAILJS_TEMPLATE_ID,
@@ -271,25 +276,24 @@ const Contact = () => {
 
   return (
     <>
-      <style>{`
-        * { font-family: 'Syne', sans-serif; box-sizing: border-box; }
-        input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.22); }
-        ::selection { background: rgba(99,102,241,0.35); }
-        ::-webkit-scrollbar { width: 6px; background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.4); border-radius: 3px; }
-      `}</style>
 
-      <div className="relative min-h-screen" style={{ background: "#080b14", color: "#f1f5f9" }}>
+      <section
+        id="contact"
+        aria-labelledby="contact-title"
+        className={`relative font-syne-scope overflow-hidden ${embedded ? "" : "min-h-screen"}`}
+        style={{ background: "#080b14", color: "#f1f5f9", "--selection": "rgba(99,102,241,0.35)" }}
+      >
         <GridBackground />
         <AmbientGlow />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-6 py-28 md:py-36">
+        <div className={`relative z-10 max-w-6xl mx-auto px-6 ${embedded ? "py-20 md:py-28" : "py-28 md:py-36"}`}>
 
           {/* ── Page Header ── */}
           <div className="mb-16">
             <motion.p
               initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.5 }}
               className="text-xs uppercase tracking-widest mb-4"
               style={{ color: "#818cf8", letterSpacing: "0.14em" }}
@@ -297,9 +301,11 @@ const Contact = () => {
               Get in Touch
             </motion.p>
 
-            <motion.h1
+            <Title
+              id="contact-title"
               initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.6, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="text-5xl md:text-7xl font-black leading-none mb-6"
               style={{ letterSpacing: "-0.03em" }}
@@ -310,14 +316,15 @@ const Contact = () => {
                 Connect
               </span>
               <span style={{ color: "#6366f1" }}>.</span>
-            </motion.h1>
+            </Title>
 
             <motion.p
               initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               className="max-w-lg text-base leading-relaxed"
-              style={{ color: "rgba(255,255,255,0.4)" }}
+              style={{ color: "rgba(255,255,255,0.6)" }}
             >
               Have a project in mind or want to discuss opportunities?
               I&apos;d love to hear from you — let&apos;s build something great together.
@@ -330,7 +337,8 @@ const Contact = () => {
             {/* ── Left sidebar ── */}
             <motion.aside
               initial={{ opacity: 0, x: -24 }}
-              animate={{ opacity: 1, x: 0 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.6, delay: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="lg:col-span-2 flex flex-col gap-5"
             >
@@ -340,7 +348,6 @@ const Contact = () => {
                 style={{
                   background:    "linear-gradient(135deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.018) 100%)",
                   border:        "1px solid rgba(255,255,255,0.08)",
-                  backdropFilter:"blur(20px)",
                 }}
               >
                 <p className="text-xs uppercase tracking-widest mb-5" style={{ color:"rgba(255,255,255,0.3)", letterSpacing:"0.1em" }}>
@@ -377,7 +384,6 @@ const Contact = () => {
                 style={{
                   background:    "linear-gradient(135deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.018) 100%)",
                   border:        "1px solid rgba(255,255,255,0.08)",
-                  backdropFilter:"blur(20px)",
                 }}
               >
                 <p className="text-xs uppercase tracking-widest mb-5" style={{ color:"rgba(255,255,255,0.3)", letterSpacing:"0.1em" }}>
@@ -414,10 +420,10 @@ const Contact = () => {
               >
                 <div aria-hidden style={{ position:"absolute", top:0, right:0, width:"120px", height:"120px", background:"radial-gradient(circle at top right, rgba(99,102,241,0.2) 0%, transparent 70%)", pointerEvents:"none" }} />
                 <p className="text-xs uppercase tracking-widest mb-2" style={{ color:"rgba(255,255,255,0.35)", letterSpacing:"0.1em" }}>Resume</p>
-                <h4 className="text-base font-semibold mb-1" style={{ color:"#f1f5f9" }}>Download CV</h4>
+                <h3 className="text-base font-semibold mb-1" style={{ color:"#f1f5f9" }}>Download CV</h3>
                 <p className="text-sm mb-5" style={{ color:"rgba(255,255,255,0.4)" }}>My full résumé with skills, projects, and experience.</p>
                 <a
-                  href={profile.resumePath}
+                  href={profile.resumePath?.startsWith("/") ? assetPath(profile.resumePath) : profile.resumePath}
                   download="Abhishek_MERN_Resume.pdf"
                   className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-250"
                   style={{ background:"rgba(99,102,241,0.9)", color:"#fff" }}
@@ -441,7 +447,8 @@ const Contact = () => {
             {/* ── Contact Form ── */}
             <motion.div
               initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.6, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="lg:col-span-3"
             >
@@ -450,13 +457,14 @@ const Contact = () => {
                 style={{
                   background:    "linear-gradient(135deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.018) 100%)",
                   border:        "1px solid rgba(255,255,255,0.08)",
-                  backdropFilter:"blur(20px)",
                 }}
               >
                 <p className="text-xs uppercase tracking-widest mb-1" style={{ color:"rgba(255,255,255,0.3)", letterSpacing:"0.1em" }}>Message</p>
                 <h3 className="text-xl font-bold mb-7" style={{ color:"#f1f5f9" }}>Send a Message</h3>
 
-                {/* Status banners */}
+                {/* Status banners — inside a persistent live region so screen
+                    readers announce them when they appear */}
+                <div role="status" aria-live="polite">
                 <AnimatePresence>
                   {formStatus === "success" && (
                     <motion.div
@@ -479,6 +487,7 @@ const Contact = () => {
                     </motion.div>
                   )}
                 </AnimatePresence>
+                </div>
 
                 {/* ── The Form ── */}
                 {/* 
@@ -496,19 +505,19 @@ const Contact = () => {
                   className="flex flex-col gap-5"
                 >
                   <div className="grid md:grid-cols-2 gap-5">
-                    <Field label="Name">
+                    <Field label="Name" htmlFor="from_name">
                       <InputField id="from_name" name="from_name" placeholder="Your name" disabled={isLoading} required />
                     </Field>
-                    <Field label="Email">
+                    <Field label="Email" htmlFor="from_email">
                       <InputField id="from_email" name="from_email" type="email" placeholder="you@email.com" disabled={isLoading} required />
                     </Field>
                   </div>
 
-                  <Field label="Subject">
+                  <Field label="Subject" htmlFor="subject">
                     <InputField id="subject" name="subject" placeholder="What's this about?" disabled={isLoading} required />
                   </Field>
 
-                  <Field label="Message">
+                  <Field label="Message" htmlFor="message">
                     <MessageField disabled={isLoading} />
                   </Field>
 
@@ -546,7 +555,7 @@ const Contact = () => {
             </motion.div>
           </div>
         </div>
-      </div>
+      </section>
     </>
   );
 };

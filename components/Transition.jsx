@@ -1,56 +1,29 @@
 "use client";
 import { motion } from "framer-motion";
 
-const Transition = () => {
-  const transitionVariants = {
-    initial: {
-      x: "100%",
-      width: "100%",
-    },
-    animate: {
-      x: "0%",
-      width: "0%",
-    },
-    exit: {
-      x: ["0%", "100%"],
-      width: ["0%", "100%"],
-    },
-  };
+// Three-layer purple wipe between pages. Animates only `scaleX` (compositor-
+// only) — the previous version animated `width`, forcing layout every frame —
+// and finishes in ~0.6s instead of ~1.2s.
+const layers = [
+  { color: "#2e2257", z: "z-30", delay: 0 },
+  { color: "#3b2d71", z: "z-20", delay: 0.08 },
+  { color: "#4b3792", z: "z-10", delay: 0.16 },
+];
 
-  return (
-    <>
+const Transition = () => (
+  <>
+    {layers.map(({ color, z, delay }) => (
       <motion.div
-        role="status"
-        className="fixed top-0 bottom-0 right-full w-screen h-screen z-30 bg-[#2e2257]"
-        variants={transitionVariants}
-        initial="initial"
-        animate="animate"
-        exit="exit"
-        transition={{ delay: 0.2, duration: 0.6, ease: "easeInOut" }}
+        key={color}
         aria-hidden
+        className={`fixed inset-0 ${z} pointer-events-none origin-left`}
+        style={{ background: color }}
+        initial={{ scaleX: 1 }}
+        animate={{ scaleX: 0 }}
+        transition={{ delay, duration: 0.45, ease: [0.65, 0, 0.35, 1] }}
       />
-      <motion.div
-        role="status"
-        className="fixed top-0 bottom-0 right-full w-screen h-screen z-20 bg-[#3b2d71]"
-        variants={transitionVariants}
-        initial="initial"
-        animate="animate"
-        exit="exit"
-        transition={{ delay: 0.4, duration: 0.6, ease: "easeInOut" }}
-        aria-hidden
-      />
-      <motion.div
-        role="status"
-        className="fixed top-0 bottom-0 right-full w-screen h-screen z-10 bg-[#4b3792]"
-        variants={transitionVariants}
-        initial="initial"
-        animate="animate"
-        exit="exit"
-        transition={{ delay: 0.6, duration: 0.6, ease: "easeInOut" }}
-        aria-hidden
-      />
-    </>
-  );
-};
+    ))}
+  </>
+);
 
 export default Transition;

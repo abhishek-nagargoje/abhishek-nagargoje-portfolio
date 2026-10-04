@@ -1,13 +1,15 @@
-import Layout from "../components/Layout";
+import { Syne, Inter, JetBrains_Mono } from "next/font/google";
 import { personalInfo } from "../data/personalInfo";
+import { siteUrl } from "../lib/site";
 import "../styles/globals.css";
 
-// On Vercel, VERCEL_PROJECT_PRODUCTION_URL is the stable production domain
-// (set automatically at build time — no protocol prefix). Falls back to the
-// GitHub Pages URL for that deploy target.
-const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : "https://n-abhishek-s.github.io/abhishek-nagargoje-portfolio";
+// Self-hosted at build time by next/font — no render-blocking request to
+// Google Fonts, no layout shift from a late font swap (size-adjusted fallback).
+// All three are variable fonts, so one file covers every weight in use.
+const syne = Syne({ subsets: ["latin"], display: "swap", variable: "--font-syne" });
+const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
+const mono = JetBrains_Mono({ subsets: ["latin"], display: "swap", variable: "--font-mono", preload: false });
+
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
@@ -26,6 +28,7 @@ export const metadata = {
     "Next.js Developer",
   ],
   authors: [{ name: personalInfo.name, url: personalInfo.github }],
+  alternates: { canonical: "./" },
   openGraph: {
     type: "website",
     url: siteUrl,
@@ -33,14 +36,14 @@ export const metadata = {
     description:
       "Building production-ready web applications, business platforms, and AI-powered solutions with React, Next.js, and modern technologies.",
     siteName: personalInfo.name,
-    images: [{ url: "/avatar.png" }],
+    images: [{ url: "og-image.jpg", width: 1200, height: 630, alt: personalInfo.name }],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: `${personalInfo.name} | Full-Stack Developer & AI Agent Developer`,
     description:
       "Building production-ready web applications, business platforms, and AI-powered solutions with React, Next.js, and modern technologies.",
-    images: ["/avatar.png"],
+    images: ["og-image.jpg"],
   },
 };
 
@@ -57,15 +60,19 @@ const personJsonLd = {
   sameAs: [personalInfo.github, personalInfo.linkedin],
 };
 
+export const viewport = {
+  themeColor: "#080b14",
+};
+
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${syne.variable} ${inter.variable} ${mono.variable}`}>
       <body suppressHydrationWarning>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
         />
-        <Layout>{children}</Layout>
+        {children}
       </body>
     </html>
   );

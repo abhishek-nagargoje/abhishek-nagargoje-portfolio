@@ -1,17 +1,23 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import Transition from "./Transition";
 
+// Plays the wipe only on client-side navigations between routes. On the
+// first page load it never renders, so it can't cover (and delay) the first
+// paint the way the old always-on overlay did.
+let hasMountedOnce = false;
+
 export default function PageTransition({ children }) {
-  const pathname = usePathname();
+  const [play] = useState(() => hasMountedOnce);
+  useEffect(() => {
+    hasMountedOnce = true;
+  }, []);
+
   return (
-    <AnimatePresence mode="wait">
-      <motion.div key={pathname} className="h-full">
-        <Transition />
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <>
+      {play && <Transition />}
+      {children}
+    </>
   );
 }

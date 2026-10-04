@@ -1,46 +1,23 @@
 "use client";
 
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { useEffect, useState } from "react";
+import { HiArrowDown, HiOutlineArrowDownTray } from "react-icons/hi2";
 import ParticlesContainer from "../ParticlesContainer";
 import ProjectsBtn from "../ProjectsBtn";
+import Counter from "../Counter";
 import Avatar from "../Avatar";
 import { personalInfo, skillsData } from "../../data/personalInfo";
 import { projectsData as localProjectsData } from "../../data/projects";
 import { getProjects, getSkills } from "../../lib/supabase/queries";
 import { mapProjectRows } from "../../lib/supabase/transform";
 import { useCmsData } from "../../lib/supabase/useCmsData";
+import { assetPath } from "../../utils/assetPath";
 
 const quickSkills = ["React.js", "Next.js", "Tailwind CSS", "Supabase", "AI / LLM APIs"];
 
 const localSkillNames = Object.values(skillsData).flat();
 const fetchProjects = () => getProjects().then(mapProjectRows);
 const fetchSkillNames = () => getSkills().then((rows) => (rows || []).map((r) => r.name));
-
-const Counter = ({ to, suffix = "" }) => {
-  const count = useMotionValue(0);
-  const rounded = useTransform(count, (v) => Math.round(v) + suffix);
-  useEffect(() => {
-    const c = animate(count, to, { duration: 2, ease: "easeOut" });
-    return c.stop;
-  }, [to]);
-  return <motion.span>{rounded}</motion.span>;
-};
-
-const stagger = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
-};
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
-};
-
-const slideIn = {
-  hidden: { opacity: 0, x: 50 },
-  show: { opacity: 1, x: 0, transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.3 } },
-};
 
 export default function Home() {
   const [hovered, setHovered] = useState(null);
@@ -67,23 +44,22 @@ export default function Home() {
   const technologyCount = new Set(skillNames).size;
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-[#060a14]">
-
-      <style>{`
-        *, *::before, *::after { box-sizing: border-box; }
-        html, body { overflow: hidden; height: 100%; margin: 0; }
-        ::-webkit-scrollbar { display: none; }
-      `}</style>
-
-      {/* Ambient glows */}
-      <div className="pointer-events-none absolute inset-0 z-0">
-        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-violet-700/20 blur-[130px]" />
-        <div className="absolute bottom-0 right-0 w-[420px] h-[420px] rounded-full bg-sky-600/15 blur-[110px]" />
-        <div className="absolute top-1/2 left-1/3 w-[280px] h-[280px] rounded-full bg-indigo-600/10 blur-[90px]" />
+    <section
+      id="home"
+      aria-labelledby="hero-title"
+      className="relative w-full min-h-[100svh] overflow-hidden bg-[#060a14]"
+    >
+      {/* Ambient glows — radial gradients instead of huge filter blurs
+          (same look, no expensive blur pass on every repaint) */}
+      <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
+        <div className="absolute -top-72 -left-72 w-[1000px] h-[1000px] rounded-full bg-[radial-gradient(circle,rgba(109,40,217,0.22)_0%,transparent_60%)]" />
+        <div className="absolute -bottom-56 -right-56 w-[860px] h-[860px] rounded-full bg-[radial-gradient(circle,rgba(2,132,199,0.16)_0%,transparent_60%)]" />
+        <div className="absolute top-1/3 left-1/4 w-[560px] h-[560px] rounded-full bg-[radial-gradient(circle,rgba(79,70,229,0.10)_0%,transparent_60%)]" />
       </div>
 
       {/* Grid texture */}
       <div
+        aria-hidden
         className="pointer-events-none absolute inset-0 z-0"
         style={{
           backgroundImage:
@@ -98,84 +74,77 @@ export default function Home() {
       </div>
 
       {/* ── Main content ── */}
-      <div className="relative z-10 h-full max-w-[1280px] mx-auto px-8 xl:px-16 flex items-center">
+      <div className="relative z-10 min-h-[100svh] max-w-[1280px] mx-auto px-6 sm:px-8 xl:px-16 pt-28 pb-32 xl:py-24 flex items-center">
         <div className="w-full grid grid-cols-1 xl:grid-cols-[1fr_480px] gap-12 items-center">
 
           {/* LEFT */}
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            animate="show"
-            className="flex flex-col justify-center"
-          >
+          {/* Entrance is pure CSS (.hero-stagger in globals.css): it starts with
+              the first paint instead of waiting for hydration. */}
+          <div className="hero-stagger flex flex-col justify-center">
             {/* Eyebrow */}
-            <motion.div variants={fadeUp} className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-6">
               <div className="h-px w-8 bg-gradient-to-r from-violet-500 to-sky-400" />
               <span
                 className="text-[11px] uppercase tracking-[0.25em] text-violet-400 font-semibold"
-                style={{ fontFamily: "'Inter', sans-serif" }}
+                style={{ fontFamily: "var(--font-inter), sans-serif" }}
               >
                 Portfolio{year ? ` · ${year}` : ""}
               </span>
-            </motion.div>
+            </div>
 
             {/* Greeting */}
-            <motion.p
-              variants={fadeUp}
-              className="text-white/40 text-sm mb-2 tracking-wide"
-              style={{ fontFamily: "'Inter', sans-serif" }}
+            <p
+                            className="text-white/55 text-sm mb-2 tracking-wide"
+              style={{ fontFamily: "var(--font-inter), sans-serif" }}
             >
               Hello, I&apos;m
-            </motion.p>
+            </p>
 
             {/* Name — controlled size */}
-            <motion.h1
-              variants={fadeUp}
-              className="font-black tracking-tight text-white leading-[1.0] mb-4"
+            <h1
+              id="hero-title"
+                            className="font-black tracking-tight text-white leading-[1.0] mb-4"
               style={{
-                fontFamily: "'Syne', sans-serif",
+                fontFamily: "var(--font-syne), sans-serif",
                 fontSize: "clamp(2.4rem, 4.8vw, 3.8rem)",
               }}
             >
               {personalInfo.name}
-            </motion.h1>
+            </h1>
 
             {/* Role badge */}
-            <motion.div variants={fadeUp} className="flex mb-5">
+            <div className="flex mb-5">
               <span
                 className="inline-flex items-center gap-2 px-4 py-[7px] rounded-full text-[13px] font-medium
                            bg-violet-600/20 border border-violet-500/35 text-violet-300"
-                style={{ fontFamily: "'Inter', sans-serif" }}
+                style={{ fontFamily: "var(--font-inter), sans-serif" }}
               >
                 <span className="w-[7px] h-[7px] rounded-full bg-violet-400 animate-pulse flex-shrink-0" />
                 {personalInfo.role}
               </span>
-            </motion.div>
+            </div>
 
             {/* Bio */}
-            <motion.p
-              variants={fadeUp}
-              className="text-white/55 text-[0.9rem] leading-[1.75] max-w-[500px] mb-6"
-              style={{ fontFamily: "'Inter', sans-serif" }}
+            <p
+                            className="text-white/55 text-[0.9rem] leading-[1.75] max-w-[500px] mb-6"
+              style={{ fontFamily: "var(--font-inter), sans-serif" }}
             >
               Building production-ready web applications, business platforms, and
               AI-powered solutions at{" "}
               <span className="text-white/80 font-medium">{personalInfo.company}</span>{" "}
               with modern technologies like React, Next.js &amp; Tailwind CSS.
-            </motion.p>
+            </p>
 
-            {/* Skills */}
-            <motion.div variants={fadeUp} className="flex flex-wrap gap-2 mb-7">
+            {/* Skills (decorative tags, not controls) */}
+            <ul className="flex flex-wrap gap-2 mb-7" aria-label="Core stack">
               {quickSkills.map((skill, i) => (
-                <motion.button
+                <li
                   key={skill}
-                  onHoverStart={() => setHovered(i)}
-                  onHoverEnd={() => setHovered(null)}
-                  whileHover={{ scale: 1.06 }}
-                  whileTap={{ scale: 0.96 }}
-                  className="px-3.5 py-1 text-[12px] font-semibold rounded-full border transition-all duration-200 cursor-default"
+                  onMouseEnter={() => setHovered(i)}
+                  onMouseLeave={() => setHovered(null)}
+                  className="px-3.5 py-1 text-[12px] font-semibold rounded-full border transition-[colors,transform] duration-200 hover:scale-[1.06] cursor-default"
                   style={{
-                    fontFamily: "'Inter', sans-serif",
+                    fontFamily: "var(--font-inter), sans-serif",
                     background:
                       hovered === i
                         ? "linear-gradient(135deg,rgba(139,92,246,.22),rgba(14,165,233,.14))"
@@ -186,12 +155,34 @@ export default function Home() {
                   }}
                 >
                   {skill}
-                </motion.button>
+                </li>
               ))}
-            </motion.div>
+            </ul>
+
+            {/* Primary / secondary CTAs */}
+            <div className="flex flex-wrap items-center gap-3 mb-8">
+              <a
+                href="#contact"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white
+                           bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500
+                           shadow-[0_6px_24px_rgba(124,58,237,0.35)] transition-colors"
+                style={{ fontFamily: "var(--font-inter), sans-serif" }}
+              >
+                Get in touch
+              </a>
+              <a
+                href={assetPath(personalInfo.resumePath || "/Abhishek_MERN_Resume.pdf")}
+                download
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold
+                           text-white/80 border border-white/15 hover:border-violet-400/60 hover:text-white transition-colors"
+                style={{ fontFamily: "var(--font-inter), sans-serif" }}
+              >
+                <HiOutlineArrowDownTray aria-hidden /> Résumé
+              </a>
+            </div>
 
             {/* Stats */}
-            <motion.div variants={fadeUp} className="flex items-center gap-8 mb-8">
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-6">
               {[
                 { label: "Projects", value: projectsData.length, suffix: "+" },
                 { label: "Technologies", value: technologyCount, suffix: "+" },
@@ -200,13 +191,13 @@ export default function Home() {
                 <div key={label} className="flex flex-col">
                   <span
                     className="text-[2rem] font-black text-white leading-none"
-                    style={{ fontFamily: "'Syne', sans-serif" }}
+                    style={{ fontFamily: "var(--font-syne), sans-serif" }}
                   >
                     <Counter to={value} suffix={suffix} />
                   </span>
                   <span
-                    className="text-white/35 text-[10px] uppercase tracking-[0.18em] mt-1"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
+                    className="text-white/55 text-[10px] uppercase tracking-[0.18em] mt-1"
+                    style={{ fontFamily: "var(--font-inter), sans-serif" }}
                   >
                     {label}
                   </span>
@@ -214,19 +205,16 @@ export default function Home() {
               ))}
 
               {/* vertical divider */}
-              <div className="h-10 w-px bg-white/10 mx-2" />
+              <div className="hidden sm:block h-10 w-px bg-white/10 mx-2" aria-hidden />
 
               {/* CTA */}
               <ProjectsBtn />
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
 
           {/* RIGHT — Avatar */}
-          <motion.div
-            variants={slideIn}
-            initial="hidden"
-            animate="show"
-            className="hidden xl:flex relative items-end justify-center h-full"
+          <div
+            className="hero-slide-in hidden xl:flex relative items-end justify-center h-full"
             style={{ minHeight: "560px" }}
           >
             {/* Soft glow behind avatar */}
@@ -238,40 +226,29 @@ export default function Home() {
               }}
             />
 
-            {/* Explosion bg */}
-            <div
-              className="absolute inset-0 bg-explosion bg-cover bg-center bg-no-repeat mix-blend-color-dodge opacity-60"
-              aria-hidden
-            />
-
             {/* Floating avatar */}
-            <motion.div
-              className="relative w-full max-w-[460px]"
-              animate={{ y: [0, -10, 0] }}
-              transition={{ repeat: Infinity, duration: 5.5, ease: "easeInOut" }}
-            >
-              <Avatar />
-            </motion.div>
-          </motion.div>
+            <div className="hero-float relative w-full max-w-[460px]">
+              <Avatar priority />
+            </div>
+          </div>
 
         </div>
       </div>
 
-      {/* Scroll indicator */}
-      <motion.div
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 z-20"
-        animate={{ opacity: [0.5, 0.1, 0.5] }}
-        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+      {/* Scroll cue — a real link to the next section */}
+      <a
+        href="#about"
+        className="hidden xl:flex absolute bottom-6 left-1/2 -translate-x-1/2 flex-col items-center gap-1 z-20
+                   text-white/35 hover:text-white/70 transition-colors"
       >
-        <div className="w-px h-8 bg-gradient-to-b from-violet-500/50 to-transparent" />
         <span
-          className="text-[9px] uppercase tracking-[0.22em] text-white/25"
-          style={{ fontFamily: "'Inter', sans-serif" }}
+          className="text-[9px] uppercase tracking-[0.22em]"
+          style={{ fontFamily: "var(--font-inter), sans-serif" }}
         >
           Scroll
         </span>
-      </motion.div>
-
-    </div>
+        <HiArrowDown className="motion-safe:animate-bounce" aria-hidden />
+      </a>
+    </section>
   );
 }

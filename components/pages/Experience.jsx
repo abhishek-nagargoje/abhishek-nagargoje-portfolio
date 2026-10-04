@@ -22,7 +22,7 @@ const fetchIndustryProjects = () =>
 const GridBackground = () => (
   <div
     aria-hidden
-    className="pointer-events-none fixed inset-0 z-0"
+    className="pointer-events-none absolute inset-0 z-0"
     style={{
       backgroundImage: `
         linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
@@ -34,18 +34,16 @@ const GridBackground = () => (
 );
 
 const AmbientGlow = () => (
-  <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+  <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
     <div style={{
       position: "absolute", top: "-15%", right: "-8%",
       width: "560px", height: "560px", borderRadius: "50%",
       background: "radial-gradient(circle, rgba(52,211,153,0.12) 0%, transparent 70%)",
-      filter: "blur(50px)",
     }} />
     <div style={{
       position: "absolute", bottom: "5%", left: "-6%",
       width: "460px", height: "460px", borderRadius: "50%",
       background: "radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)",
-      filter: "blur(60px)",
     }} />
   </div>
 );
@@ -103,39 +101,41 @@ const localRoles = [
 
 const localIndustryProjects = localProjectsData.filter((p) => p.tier === "industry");
 
-const Experience = () => {
+const Experience = ({ embedded = false }) => {
+  const Title = embedded ? motion.h2 : motion.h1;
   const { data: roles } = useCmsData(fetchExperiences, localRoles);
   const { data: industryProjects } = useCmsData(fetchIndustryProjects, localIndustryProjects);
 
   return (
     <>
-      <style>{`
-        * { font-family: 'Syne', sans-serif; box-sizing: border-box; }
-        .mono { font-family: 'JetBrains Mono', monospace !important; }
-        ::selection { background: rgba(52,211,153,0.3); }
-        ::-webkit-scrollbar { width: 6px; background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(52,211,153,0.35); border-radius: 3px; }
-      `}</style>
 
-      <div className="relative min-h-screen" style={{ background: "#080b14", color: "#f1f5f9" }}>
+      <section
+        id="experience"
+        aria-labelledby="experience-title"
+        className={`relative font-syne-scope overflow-hidden ${embedded ? "" : "min-h-screen"}`}
+        style={{ background: "#080b14", color: "#f1f5f9", "--selection": "rgba(52,211,153,0.3)" }}
+      >
         <GridBackground />
         <AmbientGlow />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-6 py-28 md:py-36">
+        <div className={`relative z-10 max-w-6xl mx-auto px-6 ${embedded ? "py-20 md:py-28" : "py-28 md:py-36"}`}>
           {/* Header */}
           <div className="mb-16">
             <motion.p
               initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.5 }}
               className="text-xs uppercase tracking-widest mb-4"
               style={{ color: "#34d399", letterSpacing: "0.14em" }}
             >
               Career
             </motion.p>
-            <motion.h1
+            <Title
+              id="experience-title"
               initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.6, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="text-5xl md:text-7xl font-black tracking-tight leading-none mb-6"
               style={{ letterSpacing: "-0.03em" }}
@@ -146,13 +146,14 @@ const Experience = () => {
                 Experience
               </span>
               <span style={{ color: "#34d399" }}>.</span>
-            </motion.h1>
+            </Title>
             <motion.p
               initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               className="max-w-lg text-base leading-relaxed"
-              style={{ color: "rgba(255,255,255,0.4)" }}
+              style={{ color: "rgba(255,255,255,0.6)" }}
             >
               From development intern to Full-Stack Developer &amp; AI Agent Developer
               at {personalInfo.company}.
@@ -165,7 +166,8 @@ const Experience = () => {
               <motion.div
                 key={role.title}
                 initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.15 }}
                 transition={{ duration: 0.5, delay: 0.1 + i * 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className="relative rounded-2xl p-7 md:p-9"
                 style={{
@@ -175,7 +177,6 @@ const Experience = () => {
                   border: role.current
                     ? "1px solid rgba(52,211,153,0.3)"
                     : "1px solid rgba(255,255,255,0.08)",
-                  backdropFilter: "blur(20px)",
                 }}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
@@ -219,7 +220,8 @@ const Experience = () => {
           {/* Responsibility groups */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.15 }}
             transition={{ duration: 0.6, delay: 0.3 }}
             className="mb-20"
           >
@@ -262,7 +264,8 @@ const Experience = () => {
           {/* Work delivered */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.15 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
             <div className="flex items-center gap-3 mb-8">
@@ -299,7 +302,7 @@ const Experience = () => {
             </div>
           </motion.div>
         </div>
-      </div>
+      </section>
     </>
   );
 };

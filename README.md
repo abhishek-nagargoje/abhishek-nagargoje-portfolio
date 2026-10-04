@@ -79,6 +79,14 @@ modern-portfolio/
 
 4. Now app is fully configured 👍 and you can start using this app using `npm run dev` or `yarn dev`.
 
+## :key: Admin Access Recovery
+
+The admin panel (`/admin`) uses **Supabase Auth** (email + password) plus the `am_i_admin()` database check; Row Level Security is the real security boundary.
+
+- **Login says it can't reach the authentication server?** The Supabase project is probably paused (free tier pauses after inactivity). Restore it in the Supabase dashboard first — no password works while it's paused.
+- **Forgot the password (normal path):** on `/admin/login` choose **Forgot password?**, enter the admin email, open the emailed link, set a new password on `/admin/reset-password/`. All other sessions are signed out. The redirect URL (`https://<your-domain>/admin/reset-password/`, plus `http://localhost:3000/admin/reset-password/` for local use) must be listed under Supabase → Authentication → URL Configuration → Redirect URLs.
+- **Email not arriving (fallback):** run locally `node --env-file-if-exists=.env.local scripts/reset-admin-password.mjs`. It asks for the service-role key at a hidden prompt (never stored), lets you type a new password (hidden) or generates a strong one, verifies login + admin status, and revokes all existing sessions. Never commit or expose the service-role key.
+
 ## :camera: Screenshots:
 
 ![Modern UI/UX](/.github/images/img1.png "Modern UI/UX")

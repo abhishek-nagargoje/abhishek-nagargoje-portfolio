@@ -1,7 +1,6 @@
 "use client";
 import { RiGithubLine, RiLinkedinLine, RiMailLine } from "react-icons/ri";
 import { personalInfo } from "../data/personalInfo";
-import { motion, AnimatePresence } from "framer-motion";
 export const socialData = [
   {
     name: "GitHub",

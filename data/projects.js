@@ -160,7 +160,7 @@ export const projectsData = [
       "Optimized image loading & display",
     ],
     featured: false,
-    thumbnail: `${BASE}/clientWebImg.png`,
+    thumbnail: `${BASE}/clientWebImg.webp`,
     links: { github: null, live: "https://n-abhishek-s.github.io/Client_photography_Website/" },
   },
   {
@@ -184,7 +184,7 @@ export const projectsData = [
       "OpenAI API integration",
     ],
     featured: false,
-    thumbnail: `${BASE}/AiEcommercesWebImg.png`,
+    thumbnail: `${BASE}/AiEcommercesWebImg.webp`,
     links: { github: null, live: "https://n-abhishek-s.github.io/AI_Ecommerce-Health-Assistant-/" },
   },
   {
@@ -206,7 +206,7 @@ export const projectsData = [
       "Fully responsive across all devices",
     ],
     featured: false,
-    thumbnail: `${BASE}/MarsadisWebImg.png`,
+    thumbnail: `${BASE}/MarsadisWebImg.webp`,
     links: { github: null, live: "https://n-abhishek-s.github.io/Cars_Showroom" },
   },
 ];

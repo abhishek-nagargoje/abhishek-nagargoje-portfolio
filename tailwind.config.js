@@ -1,8 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 
 const repo = "abhishek-nagargoje-portfolio";
-const isProd = process.env.NODE_ENV === "production";
-const base = isProd ? `/${repo}` : "";
+// Must match next.config.js: the GitHub Pages subpath applies only to
+// production builds that are NOT on Vercel (Vercel serves from the root).
+const isGithubPagesBuild = process.env.NODE_ENV === "production" && !process.env.VERCEL;
+const base = isGithubPagesBuild ? `/${repo}` : "";
 
 module.exports = {
   content: [
@@ -39,8 +41,9 @@ module.exports = {
         "spin-slow": "spin 6s linear infinite",
       },
       fontFamily: {
-        poppins: [`var(--font-poppins)`, "sans-serif"],
-        sora: [`var(--font-sora)`, "sans-serif"],
+        syne: ["var(--font-syne)", "sans-serif"],
+        inter: ["var(--font-inter)", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
     },
   },

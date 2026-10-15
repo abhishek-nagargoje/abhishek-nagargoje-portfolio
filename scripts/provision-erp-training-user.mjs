@@ -18,7 +18,7 @@ import readline from "node:readline";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const EMAIL = (process.env.ERP_TRAINING_EMAIL || "training@hrremedyindia.com").trim().toLowerCase();
-const PERSONAS = ["asha", "ravi", "meera"]; // Student, Instructor, Administrator
+const PERSONAS = ["priya", "rahul", "anita"]; // Accountant, Finance Manager, Finance Controller
 
 function ask(question, { hidden = false } = {}) {
   return new Promise((resolve) => {

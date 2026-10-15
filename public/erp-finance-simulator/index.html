@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SAP Finance</title>
-<meta name="description" content="SAP Finance: planning and analysis, parallel-ledger accounting and close, fixed assets, payables and receivables, GST and treasury – with fictional training data.">
+<meta name="description" content="SAP Finance: planning and analysis, parallel-ledger accounting and close, fixed assets, payables and receivables, GST and treasury .">
 <meta name="robots" content="noindex">
 <style>
 :root{--blue:#0a6ed1;--blue-d:#0854a0;--hd:#1d2d3e;--ink:#1d2d3e;--mut:#556b82;--line:#d9d9d9;--line2:#e5e5e5;--bg:#f5f6f7;--shell:#1d2d3e;--ok:#188918;--err:#bb0000;--warn:#c35500;--sh:0 2px 8px rgba(0,0,0,.16);color-scheme:light;font-family:"72","72full",Arial,Helvetica,sans-serif}
@@ -204,14 +204,14 @@ const stamp=()=>new Date().toLocaleString('en-IN');
      stored in this repository; the project owner issues it to trainees.
    SUPABASE MODE (config.js sets supabaseUrl + supabaseAnonKey):
      Sign-in uses Supabase Auth (password grant) with the public anon key
-     only. Training personas come from the user's server-controlled
+     only. User roles come from the user's server-controlled
      app_metadata.erp_personas – never from the email address. Provision the
      account with scripts/provision-erp-training-user.mjs (the service-role
      key is entered locally and is never shipped to the browser).
    Sessions are held in memory only, so opening or refreshing the page
    always starts at the sign-in screen.
    ===================================================================== */
-const DEMO_ACCOUNTS=[{email:'training@hrremedyindia.com',salt:'hrr-sim-v1|',hash:'af570c594d90b07c5cac0a41d568f0ae2acb3b6849cf28891941c7b91f8fa962',name:'Finance Training',personas:['asha','ravi','meera']}];
+const DEMO_ACCOUNTS=[{email:'training@hrremedyindia.com',salt:'hrr-sim-v1|',hash:'af570c594d90b07c5cac0a41d568f0ae2acb3b6849cf28891941c7b91f8fa962',name:'Finance user',personas:['priya','rahul','anita']}];
 function sha256js(m){const K=[];let p=2;while(K.length<64){let pr=1;for(let d=2;d*d<=p;d++)if(p%d==0){pr=0;break}if(pr)K.push((Math.cbrt(p)%1*4294967296)|0);p++}
  const H=[];p=2;while(H.length<8){let pr=1;for(let d=2;d*d<=p;d++)if(p%d==0){pr=0;break}if(pr)H.push((Math.sqrt(p)%1*4294967296)|0);p++}
  const b=[...new TextEncoder().encode(m)],l=b.length*8;b.push(128);while(b.length%64!=56)b.push(0);for(let k=7;k>=0;k--)b.push(k>3?0:(l>>>(k*8))&255);
@@ -233,7 +233,7 @@ const Auth={
       if(!r.ok)throw Error('The sign-in service is unavailable. Please try again later.');
       this.token=j.access_token;const md=j.user?.app_metadata||{};
       const ps=Array.isArray(md.erp_personas)?md.erp_personas.filter(p=>USERS.some(u=>u.id===p)):[];
-      return {email:j.user?.email||email,name:j.user?.user_metadata?.name||'Training user',personas:ps.length?ps:['asha']};
+      return {email:j.user?.email||email,name:j.user?.user_metadata?.name||'Finance user',personas:ps.length?ps:['priya']};
     }
     const acc=DEMO_ACCOUNTS.find(a=>a.email===email),h=await sha256((acc?acc.salt:'x|')+password);
     if(!acc||h!==acc.hash)throw Error('The email or password is incorrect.');
@@ -258,15 +258,15 @@ const VERSIONS=['Budget','Forecast','Simulation'];
 const VCOL={Actual:'#1d2d3e',Budget:'#0a6ed1',Forecast:'#7bb8ff',Simulation:'#e26b0a'};
 const ASSET_CLASSES=['Office equipment','IT hardware','Furniture and fixtures','Vehicles','Plant and machinery'];
 const AGE=[['Not due',-1e9,0],['1–30 days',1,30],['31–60 days',31,60],['61–90 days',61,90],['Over 90 days',91,1e9]];
-// Training personas. Authorisation is by persona role, granted per account (never inferred from an email address).
-const USERS=[{id:'asha',name:'Asha Student',role:'Student',desc:'Prepares journals, invoices, purchase orders, assets and plan inputs'},{id:'ravi',name:'Ravi Instructor',role:'Instructor',desc:'Reviews, approves and posts; runs payments, depreciation and the close'},{id:'meera',name:'Meera Admin',role:'Administrator',desc:'Full access: periods, tax codes, FX rates and data reset'}];
-const CAN={create:['Student','Administrator'],approve:['Instructor','Administrator'],admin:['Administrator']};
+// Users and roles. Authorisation is by role, granted per account (never inferred from an email address).
+const USERS=[{id:'priya',name:'Priya Sharma',role:'Accountant',desc:'Accounts executive – prepares journals, invoices, purchase orders, assets and plan inputs'},{id:'rahul',name:'Rahul Mehta',role:'Finance Manager',desc:'Reviews, approves and posts; runs payments, depreciation and the month-end close'},{id:'anita',name:'Anita Desai',role:'Finance Controller',desc:'Full access: posting periods, tax codes, exchange rates and system settings'}];
+const CAN={create:['Accountant','Finance Controller'],approve:['Finance Manager','Finance Controller'],admin:['Finance Controller']};
 const can=k=>!!S.user&&CAN[k].includes(S.user.role);
-const need=(k,msg)=>{if(!can(k))throw Error(msg||`Your persona (${S.user.role}) is not authorised for this action.`)};
+const need=(k,msg)=>{if(!can(k))throw Error(msg||`Your role (${S.user.role}) is not authorised for this action.`)};
 
 /* ===== data ===== */
 let D,SEEDING=false;
-function blank(){return {v:3,periods:[{id:'2026-09',open:false},{id:'2026-10',open:true},{id:'2026-11',open:true},{id:'2026-12',open:true}],journals:[],invoices:[],pos:[],assets:[],depRuns:[],stmt:[],stmtOpen:{},flows:[],tasks:[],scen:[],audit:[],close:{},gst:{},seq:1000,iseq:{AR:0,AP:0},poseq:4500000,aseq:0,tseq:0,sseq:0,fseq:0,cseq:0,keyDate:'2026-10-15',fx:{USD:83.25},minCash:cents(200000),
+function blank(){return {v:4,periods:[{id:'2026-09',open:false},{id:'2026-10',open:true},{id:'2026-11',open:true},{id:'2026-12',open:true}],journals:[],invoices:[],pos:[],assets:[],depRuns:[],stmt:[],stmtOpen:{},flows:[],tasks:[],scen:[],audit:[],close:{},gst:{},seq:1000,iseq:{AR:0,AP:0},poseq:4500000,aseq:0,tseq:0,sseq:0,fseq:0,cseq:0,keyDate:'2026-10-15',fx:{USD:83.25},minCash:cents(200000),
   tax:[{code:'G18',desc:'GST 18% (standard)',rate:1800},{code:'G12',desc:'GST 12%',rate:1200},{code:'G5',desc:'GST 5%',rate:500},{code:'G0',desc:'GST exempt / nil rated',rate:0}],
   plan:{},drv:{units:250,unitGrowth:5,price:1600,cogsPct:52,headcount:2,salary:47500,opexBase:150000,opexGrowth:1,dep:12000}}}
 function audit(act,ref,by){D.audit.unshift({t:stamp(),by:by||S.user?.name||'system',act,ref:ref||''})}
@@ -292,8 +292,8 @@ function problems(j){
 function post(j){ // manual journals: validate everything first, then change state once
   if(live(j))throw Error('Already posted – duplicate posting blocked.');
   if(j.status!=='Submitted')throw Error('Only submitted entries can be posted.');
-  need('approve','Your persona cannot post journals.');
-  if(j.by===S.user.name&&S.user.role!=='Administrator')throw Error('Separation of duties: you cannot approve your own entry.');
+  need('approve','Your role cannot post journals.');
+  if(j.by===S.user.name&&S.user.role!=='Finance Controller')throw Error('Separation of duties: you cannot approve your own entry.');
   const e=problems(j);if(e.length)throw Error(e[0]);
   j.status='Posted';j.approver=S.user.name;j.posted=stamp();audit('Posted journal',j.id);
 }
@@ -340,7 +340,7 @@ const depRun=(p,l)=>D.depRuns.find(r=>r.period===p&&r.ledger===l);
 const postedDep=(a,l)=>sum(D.depRuns.filter(r=>r.ledger===l).map(r=>r.amounts[a.id]||0));
 const hasDep=a=>D.depRuns.some(r=>r.amounts[a.id]);
 function runDep(p){
-  need('approve','Only the Instructor or Administrator persona can run depreciation.');
+  need('approve','Only a Finance Manager or Finance Controller can run depreciation.');
   if(!periodOpen(lastDay(p)))throw Error(`Period ${mName(p)} is closed – depreciation cannot be posted.`);
   const act=D.assets.filter(a=>a.status==='Active');if(!act.length)throw Error('There are no active assets to depreciate.');
   const first=act.map(a=>per(a.acq)).sort()[0],posted=[],skipped=[];
@@ -409,9 +409,9 @@ function closeChecks(p){const end=lastDay(p),c=D.close[p]||{};
    {k:'rev',label:'Management review of P&L and balance sheet',ok:!!c.rev,detail:c.rev?`Confirmed by ${c.rev.by} · ${c.rev.t}`:'Manual sign-off required.',manual:true}];
 }
 
-/* ===== seed: fictional training company ===== */
+/* ===== seed: demo company ===== */
 function seed(){
-  D=blank();SEEDING=true;const M='Meera Admin',R='Ravi Instructor',As='Asha Student';
+  D=blank();SEEDING=true;const M='Anita Desai',R='Rahul Mehta',As='Priya Sharma';
   const P=(desc,date,ls,o)=>{o=o||{};return mkJ({desc,date,lines:ls.map(([a,dr,cr])=>L(a,cents(dr),cents(cr))),status:'Posted',by:o.by||M,approver:o.ap||R,src:o.src||'Manual',ledger:o.ledger||'ALL'})};
   P('Opening share capital','2026-09-01',[['100000',1500000,0],['300000',0,1500000]]);
   const eq=P('Asset acquisition FA-0001 – Office equipment','2026-09-04',[['120000',240000,0],['100000',0,240000]],{src:'Asset acquisition'});
@@ -428,7 +428,7 @@ function seed(){
   const tx=[L('510000',cents(600),0),L('100000',0,cents(600))];
   mkJ({desc:'Cloud software subscription (USD 600)',date:'2026-10-08',cur:'USD',rate:83.10,tx,lines:toLocal(tx,83.10),status:'Posted',by:M,approver:R});
   mkJ({desc:'October office rent',date:'2026-10-10',lines:[L('510000',cents(45000),0),L('100000',0,cents(45000))],status:'Submitted',by:As});
-  mkJ({desc:'Accrued utilities (check me – unbalanced)',date:'2026-10-12',lines:[L('510000',cents(12000),0),L('200000',0,cents(11000))],status:'Draft',by:As});
+  mkJ({desc:'Accrued utilities – October',date:'2026-10-12',lines:[L('510000',cents(12000),0),L('200000',0,cents(11000))],status:'Draft',by:As});
   // fixed assets: IFRS straight line vs local GAAP declining balance (and the reverse)
   D.assets.push({id:'FA-0001',name:'Office equipment – Pune office',cls:'Office equipment',acq:'2026-09-04',cost:cents(240000),salvage:0,areas:{'0L':{m:'SL',life:2.5,rate:0},'2L':{m:'DB',life:5,rate:60}},acqJe:eq.id,status:'Active',by:M});
   D.assets.push({id:'FA-0002',name:'Server rack and UPS',cls:'IT hardware',acq:'2026-10-01',cost:cents(120000),salvage:cents(12000),areas:{'0L':{m:'DB',life:5,rate:40},'2L':{m:'SL',life:5,rate:0}},acqJe:sr.id,status:'Active',by:M});
@@ -462,15 +462,15 @@ function seed(){
   D.plan.Simulation=simulate(D.drv);
   D.scen.push({id:'SC1',name:'Base case Q3',drv:{...D.drv},by:R,t:'seed'},{id:'SC2',name:'Price increase 8%',drv:{...D.drv,price:1728,units:235},by:R,t:'seed'});D.cseq=2;
   [['Headcount plan input – Q3','Planning','2026-10-09',As,R,'Submitted'],['Revenue plan by product line','Planning','2026-10-16',As,R,'In progress'],['Review operating expense forecast','Review','2026-10-20',R,M,'Open'],['Approve Q3 budget version','Approval','2026-10-28',R,M,'Open'],['November rolling forecast','Planning','2026-11-05',As,R,'Open']].forEach(([title,type,due,assignee,reviewer,status])=>D.tasks.push({id:'T'+(++D.tseq),title,type,due,assignee,reviewer,status,notes:''}));
-  SEEDING=false;audit('Training data created','all','system');
+  SEEDING=false;audit('Company data created','all','system');
 }
 
 /* ===== state & persistence ===== */
 function freshState(){return {user:null,page:'login',view:'home',tabs:{},acc:{0:true},step:{},menu:false,chat:false,nav:false,q:'',jst:'',iq:'',ist:'',aq:'',fq:'',fa:'',ledger:'0L',cur:'INR',month:'2026-10',ver:'Budget',cmp:'Q',plP:'',closeP:'2026-10',gstP:'2026-10',calM:'2026-10',bank:'100000',depP:'2026-10',scenOpen:null}}
 const S=freshState();
-const KEY='erpfin.v3';let storageWarned=false;
-function load(){try{localStorage.removeItem('erpfin.v2.u');localStorage.removeItem('erpfin.v2')}catch(e){}
-  try{const sv=JSON.parse(localStorage.getItem(KEY));if(sv&&sv.v===3&&Array.isArray(sv.journals))D=sv;else seed()}catch(e){seed()}}
+const KEY='erpfin.v4';let storageWarned=false;
+function load(){try{localStorage.removeItem('erpfin.v2.u');localStorage.removeItem('erpfin.v2');localStorage.removeItem('erpfin.v3')}catch(e){}
+  try{const sv=JSON.parse(localStorage.getItem(KEY));if(sv&&sv.v===4&&Array.isArray(sv.journals))D=sv;else seed()}catch(e){seed()}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){if(!storageWarned){storageWarned=true;toast('This browser is blocking storage – changes will be lost when the page is closed.',1)}}}
 load();
 
@@ -503,7 +503,7 @@ const CATS=[
   ['table','Bank reconciliation','Import statement lines, auto-match them to the ledger and post bank charges or interest in one click.','bankrec']]}
 ];
 function preview(kind,title,seedN){
-  const h=[60,90,45,110,75,95,55,100],k0=seedN||0,top=`<rect width="320" height="170" fill="#fff"/><rect width="320" height="24" fill="#1d2d3e"/><text x="10" y="16" fill="#fff" font-size="10" font-family="Arial">${esc(title)}</text><text x="310" y="16" fill="#9fb0c2" font-size="8" font-family="Arial" text-anchor="end">training illustration</text>`;
+  const h=[60,90,45,110,75,95,55,100],k0=seedN||0,top=`<rect width="320" height="170" fill="#fff"/><rect width="320" height="24" fill="#1d2d3e"/><text x="10" y="16" fill="#fff" font-size="10" font-family="Arial">${esc(title)}</text><text x="310" y="16" fill="#9fb0c2" font-size="8" font-family="Arial" text-anchor="end">illustration</text>`;
   let body='';
   if(kind==='tree'){body=`<g fill="#fff" stroke="#0a6ed1">${[[20,80],[120,45],[120,115],[220,30],[220,62],[220,100],[220,132]].map(([x,y])=>`<rect x="${x}" y="${y}" width="80" height="22" rx="4"/>`).join('')}</g><path d="M100 91h10v-35h10M110 91v35h10M200 56h10v-15h10M210 56v17h10M200 126h10v-15h10M210 126v17h10" stroke="#9fb0c2" fill="none"/>`}
   else if(kind==='cal'){for(let r=0;r<4;r++)for(let c=0;c<7;c++){body+=`<rect x="${14+c*42}" y="${34+r*32}" width="38" height="28" rx="3" fill="#f5f8fc" stroke="#d9e2ec"/>`;if((r*7+c+k0)%5===1)body+=`<rect x="${17+c*42}" y="${48+r*32}" width="32" height="6" rx="2" fill="${['#0a6ed1','#e26b0a','#188918'][(r+c)%3]}"/>`}}
@@ -529,7 +529,7 @@ ${S.menu?`<div class="menu" role="menu"><small>Signed in as ${esc(SESSION.email)
 <div class="accs">${accs}</div>
 <section class="cta"><h2>See how SAP finance processes meet your finance team's needs</h2><div class="row"><button class="btn p lg" data-a="launch">Open the finance workspace</button></div><p class="note">Demo with fictional data. Not affiliated with or endorsed by SAP SE. SAP is a trademark of SAP SE.</p></section></main>
 <button class="fab" data-a="chat" aria-label="Help and guidance" aria-expanded="${S.chat}">${ic('chat')}</button>
-${S.chat?`<div class="panel" role="dialog" aria-label="Help"><h3>How to use this application</h3><div>Open an area above and step through it, or choose <b>Try this step in the workspace</b>. In the workspace, switch the training persona from the top bar: prepare as <b>Asha (Student)</b>, approve as <b>Ravi (Instructor)</b>.<br><button class="btn sm p" data-a="launch">Open workspace</button><button class="btn sm g" data-a="logout">Sign out</button></div></div>`:''}`}
+${S.chat?`<div class="panel" role="dialog" aria-label="Help"><h3>How to use this application</h3><div>Open an area above and step through it, or choose <b>Try this step in the workspace</b>. Use <b>Working as</b> in the top bar to act as the accountant who prepares a document or the finance manager who approves it.<br><button class="btn sm p" data-a="launch">Open workspace</button><button class="btn sm g" data-a="logout">Sign out</button></div></div>`:''}`}
 
 /* ===== sign-in ===== */
 function loginView(){return `<div class="lg-wrap"><aside class="lg-side"><div class="brand"><span class="mark">ERP</span><div><b>SAP Finance</b>Workspace</div></div>
@@ -538,7 +538,7 @@ function loginView(){return `<div class="lg-wrap"><aside class="lg-side"><div cl
   <svg class="deco" viewBox="0 0 300 180" aria-hidden="true"><g fill="#fff"><rect x="60" y="70" width="40" height="110"/><rect x="110" y="40" width="40" height="140"/><rect x="160" y="90" width="40" height="90"/><rect x="210" y="20" width="40" height="160"/></g></svg></aside>
  <main class="lg-main"><form class="lg-form" id="lf" novalidate autocomplete="on">
   <div class="lg-mob"><span class="mark">ERP</span><div><b>SAP Finance</b><span style="color:var(--mut)">Workspace</span></div></div>
-    <h1>Welcome to Finance</h1><p class="sub">Sign in to your finance training workspace.</p>
+    <h1>Welcome to Finance</h1><p class="sub">Sign in to your finance workspace.</p>
   <div class="strip e" id="le" role="alert" hidden>${ic('alert')}<span id="let"></span></div>
   <label for="em">Email <span class="req" aria-hidden="true">*</span></label><input class="fld" id="em" name="email" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" required>
   <label for="pw">Password <span class="req" aria-hidden="true">*</span></label><div class="pwf"><input class="fld" id="pw" name="password" type="password" autocomplete="current-password" required><button type="button" id="pwt" aria-label="Show password" aria-pressed="false" title="Show password">${ic('eye')}</button></div>
@@ -589,8 +589,8 @@ const jlink=id=>`<button class="link" style="font-size:13.5px;padding:0" data-a=
 
 function shell(){
   const nb=pendingCount(),allowed=USERS.filter(u=>SESSION.personas.includes(u.id));
-  return `<div class="shell"><header class="sb"><button class="ib hm" data-a="nav" aria-label="Toggle navigation" aria-expanded="${S.nav}">${ic('menu')}</button><span class="mark">ERP</span><span class="ttl">SAP Finance</span><span style="flex:1"></span><span class="co" style="font-size:12px;opacity:.85;white-space:nowrap">Training Co. (fictional) · key date ${D.keyDate}</span><button class="ib" data-a="view" data-v="approvals" aria-label="Approvals: ${nb} waiting" title="Approvals">${ic('bell')}${nb?`<span class="bdg">${nb}</span>`:''}</button>
-<label class="who" for="su" style="font-size:12px;opacity:.85">Working as</label><select id="su" aria-label="Training persona">${allowed.map(u=>`<option value="${u.id}" ${S.user.id===u.id?'selected':''}>${u.name} · ${u.role}</option>`).join('')}</select><span class="acct" title="Signed-in account">${esc(SESSION.email)}</span><button class="so" data-a="logout" aria-label="Sign out" title="Sign out">${ic('out')}<span>Sign out</span></button></header>
+  return `<div class="shell"><header class="sb"><button class="ib hm" data-a="nav" aria-label="Toggle navigation" aria-expanded="${S.nav}">${ic('menu')}</button><span class="mark">ERP</span><span class="ttl">SAP Finance</span><span style="flex:1"></span><span class="co" style="font-size:12px;opacity:.85;white-space:nowrap">Pune Trading Pvt Ltd · Company 1000 · ${D.keyDate}</span><button class="ib" data-a="view" data-v="approvals" aria-label="Approvals: ${nb} waiting" title="Approvals">${ic('bell')}${nb?`<span class="bdg">${nb}</span>`:''}</button>
+<label class="who" for="su" style="font-size:12px;opacity:.85">Working as</label><select id="su" aria-label="Working as">${allowed.map(u=>`<option value="${u.id}" ${S.user.id===u.id?'selected':''}>${u.name} · ${u.role}</option>`).join('')}</select><span class="acct" title="Signed-in account">${esc(SESSION.email)}</span><button class="so" data-a="logout" aria-label="Sign out" title="Sign out">${ic('out')}<span>Sign out</span></button></header>
 <div class="body"><nav class="nav ${S.nav?'open':''}" aria-label="Finance navigation">${NAV.map(n=>n[0]==='—'?`<h6>${n[1]}</h6>`:`<button data-a="view" data-v="${n[0]}" data-t="${n[1]}" ${navCurrent(n[0],n[1])?'aria-current="page"':''}>${ic(n[3])}${n[2]}</button>`).join('')}<p class="note" style="padding:12px">Demo data · not affiliated with SAP SE.</p></nav>
 <main class="main" id="main"><div class="bc">${AREA[S.view]} › ${PAGES[S.view]}</div><h1>${PAGES[S.view]}</h1>${VIEW[S.view]()}</main></div></div>`}
 
@@ -605,7 +605,7 @@ home(){const t=totals({ledger:'0L'}),b=t.b,oct=actuals(['2026-10']),bud=planOf('
   <div class="sec"><h2>Explore by area</h2><div class="areas">
    ${[['Financial planning and analysis','Driver-based scenarios, plan versions, planning calendar.',[['plan','bva','Budget vs actuals'],['plan','drv','Value driver tree'],['plan','cal','Planning calendar']]],['Accounting and financial close','Parallel ledgers, fixed assets, journals and the close checklist.',[['journals','','Journals'],['assets','','Fixed assets'],['close','','Close checklist']]],['Finance operations','Supplier and customer invoices, payments and receipts, GR/IR.',[['ap','','Payables'],['ar','','Receivables'],['po','','GR/IR']]],['Compliance and tax management','GST codes, return and settlement, control checks.',[['tax','gst','GST return'],['tax','ctl','Controls'],['audit','','Audit trail']]],['Treasury management','Cash position, liquidity forecast, bank reconciliation.',[['cash','pos','Cash position'],['cash','liq','Liquidity'],['bankrec','','Bank reconciliation']]]].map(([h,p,ls])=>`<div class="area"><h3>${h}</h3><p>${p}</p>${ls.map(([v,t,l])=>`<button class="btn sm" data-a="view" data-v="${v}" data-t="${t}">${l}</button>`).join('')}</div>`).join('')}</div></div>
   <div class="grid2"><div class="sec"><h2>Recent postings</h2>${tbl(['Entry','Date','Description','Amount (₹)'],recent.map(j=>[jlink(j.id),j.date,esc(j.desc),fmt(jTotal(j))]),[3])}</div>
-  <div class="sec"><h2>Guided exercises</h2><div class="pad"><ol style="margin:0;padding-left:20px;line-height:1.9"><li>As <b>Asha</b>, create a balanced journal and submit it.</li><li>Switch to <b>Ravi</b> and approve it under <b>Approvals</b>.</li><li>Clear the GR/IR price difference on PO 4500002.</li><li>Auto-match the bank statements and post the bank charge.</li><li>Run the payment run; settle GST for September and October.</li><li>Run October depreciation, sign off the checklist and close October.</li><li>Change drivers in the value driver tree, save a scenario and compare versions.</li></ol></div></div></div>`},
+  <div class="sec"><h2>Month-end to-do</h2><div class="pad"><ol style="margin:0;padding-left:20px;line-height:1.9"><li>Review and post journals waiting in <b>Approvals</b>.</li><li>Correct the unbalanced utilities accrual draft and submit it.</li><li>Clear the GR/IR price difference on PO 4500002.</li><li>Reconcile the HDFC and ICICI bank statements.</li><li>Run the supplier payment run and follow up overdue customers.</li><li>Settle GST for September and October.</li><li>Post October depreciation, complete the checklist and close October.</li><li>Update the Q3 forecast in the value driver tree.</li></ol></div></div></div>`},
 
 plan(){const [t,tb]=tabs('plan',[['drv','Value driver tree'],['entry','Plan entry'],['cmp','Version comparison'],['cal','Planning calendar'],['bva','Budget vs actuals']]);return tb+PLAN[t]()},
 
@@ -613,7 +613,7 @@ journals(){const q=S.q.toLowerCase();
   const rows=D.journals.filter(j=>(!q||(j.id+' '+j.desc+' '+j.by+' '+j.src).toLowerCase().includes(q))&&(!S.jst||j.status===S.jst)).slice().reverse();
   return `<div class="tools">${can('create')?`<button class="btn p sm" data-a="newj">+ Create journal</button>`:''}${search('q','Search entry, text, user or source')}${sel('jst',[['','All statuses'],...['Draft','Submitted','Posted','Rejected','Reversed'].map(s=>[s,s])],'Status')}<span class="note" style="margin:0">${rows.length} of ${D.journals.length}</span></div>
   <div class="sec">${tbl(['Entry','Date','Description','Ledger','Curr.','Amount (₹)','Status','Prepared by','Actions'],rows.map(j=>[jlink(j.id),j.date,esc(j.desc)+(j.src!=='Manual'?` <small class="note">· ${esc(j.src)}</small>`:''),j.ledger==='ALL'?'0L + 2L':j.ledger,j.cur,fmt(jTotal(j)),stat(j.status),esc(j.by),jact(j)]),[5])}</div>
-  <p class="note">Posted entries can never be edited or deleted – correct them with a reversal, which is linked to the original. Ledger “0L + 2L” postings update both books; ledger-specific entries (for example depreciation) update one.${can('create')?'':' Your persona cannot create journals – switch to Asha or Meera.'}</p>`},
+  <p class="note">Posted entries can never be edited or deleted – correct them with a reversal, which is linked to the original. Ledger “0L + 2L” postings update both books; ledger-specific entries (for example depreciation) update one.${can('create')?'':' Your role cannot create journals – switch user to Priya Sharma or Anita Desai.'}</p>`},
 
 ledger(){const rows=[];let run=0;
   const js=D.journals.filter(j=>inLedger(j,S.ledger)).slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
@@ -632,7 +632,7 @@ assets(){const q=S.fq.toLowerCase(),list=D.assets.filter(a=>!q||(a.id+' '+a.name
   return `<div class="tools">${can('create')?`<button class="btn p sm" data-a="newasset">+ Create asset</button>`:''}${search('fq','Search asset, name or class')}<span class="note" style="margin:0">Active cost ₹${fmt(sum(D.assets.filter(a=>a.status==='Active'),'cost'))} · accumulated depreciation (0L) ₹${fmt(-bal()['125000'])}</span></div>
   <div class="sec"><h2>Asset register</h2>${tbl(['Asset','Description','Capitalised','Cost (₹)','Residual (₹)','0L – IFRS · NBV','2L – Local GAAP · NBV','Status','Actions'],rows,[3,4,5,6])}</div>
   <div class="grid2"><div class="sec"><h2>Depreciation run<span class="r">${sel('depP',D.periods.map(p=>[p.id,`${mName(p.id)}${p.open?'':' (closed)'}`]),'Period')}</span></h2>${tbl(['Asset','Name','0L (₹)','2L (₹)'],prev,[2,3],`<tr class="tot"><td></td><td>Total</td><td class="n">${fmt(sum(D.assets.map(a=>planned(a,'0L',S.depP))))}</td><td class="n">${fmt(sum(D.assets.map(a=>planned(a,'2L',S.depP))))}</td></tr>`)}
-    <div class="pad"><button class="btn p sm" data-a="rundep" data-p="${S.depP}" ${can('approve')&&!both?'':'disabled'}>Post depreciation for ${mName(S.depP)}</button> ${both?stat('Posted'):''}<p class="note">${can('approve')?'Posts one ledger-specific entry per ledger (Dr 530000 Depreciation / Cr 125000 Accumulated depreciation). Each period can be posted once, in sequence.':'Depreciation runs need the Instructor or Administrator persona.'}</p></div></div>
+    <div class="pad"><button class="btn p sm" data-a="rundep" data-p="${S.depP}" ${can('approve')&&!both?'':'disabled'}>Post depreciation for ${mName(S.depP)}</button> ${both?stat('Posted'):''}<p class="note">${can('approve')?'Posts one ledger-specific entry per ledger (Dr 530000 Depreciation / Cr 125000 Accumulated depreciation). Each period can be posted once, in sequence.':'Depreciation runs need a Finance Manager or Finance Controller.'}</p></div></div>
   <div class="sec"><h2>Posted runs</h2>${tbl(['Period','Ledger','Entry','Assets','Amount (₹)','Run by'],runs.map(r=>[r.period,r.ledger,r.je==='—'?'—':jlink(r.je),Object.keys(r.amounts).length,fmt(r.total),esc(r.by)]),[3,4])}</div></div>
   <p class="note">Straight line: (cost − residual) ÷ useful life in months, with the final month absorbing rounding. Declining balance: opening net book value × annual rate ÷ 12, never below the residual value. Depreciation starts in the month of capitalisation. Assets with posted depreciation cannot be edited or cancelled.</p>`},
 
@@ -641,7 +641,7 @@ close(){const p=S.closeP,P=D.periods.find(x=>x.id===p),ch=closeChecks(p),done=ch
   <div class="sec"><h2>Close checklist – ${mName(p)}<span class="r">${P?.open?`<button class="btn sm p" data-a="closeper" ${done===ch.length&&can('approve')?'':'disabled'}>Close period</button>`:`<button class="btn sm" data-a="tper" data-id="${p}" ${can('approve')?'':'disabled'}>Reopen period</button>`}</span></h2>
   ${ch.map(c=>`<div class="chk"><span class="ic ${c.ok?'ok':'no'}" aria-label="${c.ok?'Complete':'Open'}">${c.ok?'✓':'!'}</span><div class="tx"><b>${c.label}</b><small>${esc(c.detail)}</small></div>${!c.ok&&P?.open?(c.run==='dep'?`<button class="btn sm p" data-a="rundep" data-p="${p}" ${can('approve')?'':'disabled'}>Run depreciation</button>`:c.manual?`<button class="btn sm" data-a="signoff" data-k="${c.k}" ${can('approve')?'':'disabled'}>Sign off</button>`:c.go?`<button class="btn sm g" data-a="view" data-v="${c.go}" data-t="${c.tab||''}">Resolve</button>`:''):c.manual&&c.ok&&P?.open?`<button class="btn sm g" data-a="signoff" data-k="${c.k}" ${can('approve')?'':'disabled'}>Withdraw</button>`:''}</div>`).join('')}</div>
   <div class="sec"><h2>Posting periods</h2>${tbl(['Period','Status','Journals posted','Open documents'],D.periods.map(x=>[mName(x.id),stat(x.open?'Open':'Closed'),D.journals.filter(j=>live(j)&&per(j.date)===x.id).length,D.journals.filter(j=>per(j.date)===x.id&&(j.status==='Draft'||j.status==='Submitted')).length]),[2,3])}</div>
-  <p class="note">Closing locks the period: any posting dated in it is rejected until it is reopened. Sign-offs, closing and reopening need the Instructor or Administrator persona${can('approve')?'':' – switch persona from the top bar'}.</p>`},
+  <p class="note">Closing locks the period: any posting dated in it is rejected until it is reopened. Sign-offs, closing and reopening need a Finance Manager or Finance Controller${can('approve')?'':' – switch user from the top bar'}.</p>`},
 
 reports(){const [t,tb]=tabs('reports',[['tb','Trial balance'],['pl','Profit and loss'],['bs','Balance sheet'],['cmp','Ledger comparison'],['arag','AR ageing'],['apag','AP ageing']]);
   if(t==='arag'||t==='apag'){const ty=t==='arag'?'AR':'AP';return tb+`<div class="sec"><h2>${ty==='AR'?'Accounts receivable':'Accounts payable'} ageing at ${D.keyDate}</h2>${agingTable(ty)}</div><p class="note">Outstanding = gross invoice − receipts or payments allocated. Days overdue are measured from the due date to the key date (Settings). Control account balance: ₹${fmt(ty==='AR'?bal()['110000']:-bal()['200000'])}.</p>`}
@@ -660,7 +660,7 @@ reports(){const [t,tb]=tabs('reports',[['tb','Trial balance'],['pl','Profit and 
 ap(){return invView('AP')},ar(){return invView('AR')},
 
 po(){const rows=D.pos.slice().reverse().map(p=>{const g=grir(p);return [p.id,esc(p.vendor),esc(p.item),`${p.qty} @ ${fmt(p.price)}`,`${p.gr} / ${fmt(p.grVal)}`,`${p.ir} / ${fmt(p.irVal)}`,g.d?`<b class="${g.d<0?'neg':''}">${fmt(g.d)}</b>`:'0.00',`${stat(g.bad?'Warning':g.s.startsWith('Matched')?'Matched':'Open')} <small>${esc(g.s)}</small>`,
-   ((p.gr<p.qty?`<button class="btn sm" data-a="gr" data-id="${p.id}">Post goods receipt</button>`:'')+(g.clear?`<button class="btn sm p" data-a="clrgr" data-id="${p.id}" ${can('approve')?'':'disabled title="Needs Instructor or Administrator"'}>Clear difference</button>`:''))||'—']});
+   ((p.gr<p.qty?`<button class="btn sm" data-a="gr" data-id="${p.id}">Post goods receipt</button>`:'')+(g.clear?`<button class="btn sm p" data-a="clrgr" data-id="${p.id}" ${can('approve')?'':'disabled title="Needs Finance Manager or Finance Controller"'}>Clear difference</button>`:''))||'—']});
   const ex=D.pos.map(p=>[p,grir(p)]).filter(([,g])=>g.s!=='Awaiting delivery'&&!g.s.startsWith('Matched'));
   return `<div class="tools">${can('create')?`<button class="btn p sm" data-a="newpo">+ Purchase order</button>`:''}<span class="note" style="margin:0">GR/IR clearing balance (0L): <b>₹ ${fmt(-bal()['210000'])}</b></span></div>
   <div class="sec"><h2>Purchase orders</h2>${tbl(['PO','Supplier','Item','Ordered (qty @ ₹)','Received (qty / ₹)','Invoiced (qty / ₹)','GR/IR diff (₹)','Status','Actions'],rows,[6])}</div>
@@ -672,7 +672,7 @@ approvals(){const ok=can('approve'),me=S.user.name;
   const rows=[...jp.map(j=>['Journal '+jlink(j.id),esc(j.desc),j.date,fmt(jTotal(j)),esc(j.by),ok?`<button class="btn sm p" data-a="appj" data-id="${j.id}" ${j.by===me&&!can('admin')?'disabled title="You prepared this entry"':''}>Approve & post</button><button class="btn sm d" data-a="rejj" data-id="${j.id}">Reject</button>`:'—']),
     ...ip.map(i=>[`${i.type==='AR'?'Customer':'Supplier'} invoice ${i.id}`,esc(i.party)+(i.ref?` · ref ${esc(i.ref)}`:'')+(i.po?` · PO ${i.po}`:''),i.date,fmt(i.gross),esc(i.by),ok?`<button class="btn sm p" data-a="appi" data-id="${i.id}" ${i.by===me&&!can('admin')?'disabled title="You prepared this invoice"':''}>Approve & post</button><button class="btn sm d" data-a="reji" data-id="${i.id}">Reject</button>`:'—']),
     ...tp.map(t=>['Planning task '+t.id,esc(t.title),t.due,'',esc(t.assignee),(t.reviewer===me||can('admin'))?`<button class="btn sm p" data-a="task" data-id="${t.id}" data-s="Completed">Approve & complete</button><button class="btn sm d" data-a="task" data-id="${t.id}" data-s="In progress">Return</button>`:`Reviewer: ${esc(t.reviewer)}`])];
-  return `<div class="sec">${tbl(['Item','Details','Date','Amount (₹)','Submitted by','Actions'],rows,[3])}</div>${ok?'':'<p class="note">The Student persona can view but not approve financial documents. Switch to Ravi (Instructor) from the top bar.</p>'}<p class="note">Separation of duties: you cannot approve an item you prepared (the Administrator may override for training; overrides are flagged in Tax management › Compliance controls).</p>`},
+  return `<div class="sec">${tbl(['Item','Details','Date','Amount (₹)','Submitted by','Actions'],rows,[3])}</div>${ok?'':'<p class="note">Accountants can view but not approve financial documents. Switch user to Rahul Mehta (Finance Manager) from the top bar.</p>'}<p class="note">Separation of duties: you cannot approve an item you prepared (the Finance Controller may override; overrides are flagged in Tax management › Compliance controls).</p>`},
 
 tax(){const [t,tb]=tabs('tax',[['gst','GST return and settlement'],['codes','Tax codes'],['ctl','Compliance controls']]);return tb+TAX[t]()},
 
@@ -681,11 +681,11 @@ audit(){const q=S.aq.toLowerCase(),rows=D.audit.filter(a=>!q||(a.by+' '+a.act+' 
 
 cash(){const [t,tb]=tabs('cash',[['pos','Cash position'],['liq','Liquidity forecast'],['tr','Transfers and FX']]);return tb+CASH[t]()},
 bankrec(){return CASH.rec()},
-settings(){const ad=can('admin');return `<div class="grid2"><div class="sec"><h2>Signed-in account</h2>${tbl(['Item','Value'],[['Email',esc(SESSION.email)],['Authentication',Auth.mode==='demo'?'Demo sign-in (checked in this browser)':'Supabase Auth'],['Session','In memory – ends on sign-out, refresh or closing the tab'],['Authorised personas',USERS.filter(u=>SESSION.personas.includes(u.id)).map(u=>`${u.name} (${u.role})`).join(', ')],['Working as',`${esc(S.user.name)} (${S.user.role})`]])}</div>
+settings(){const ad=can('admin');return `<div class="grid2"><div class="sec"><h2>Signed-in account</h2>${tbl(['Item','Value'],[['Email',esc(SESSION.email)],['Authentication',Auth.mode==='demo'?'Demo sign-in (checked in this browser)':'Supabase Auth'],['Session','In memory – ends on sign-out, refresh or closing the tab'],['Authorised users',USERS.filter(u=>SESSION.personas.includes(u.id)).map(u=>`${u.name} (${u.role})`).join(', ')],['Working as',`${esc(S.user.name)} (${S.user.role})`]])}</div>
   <div class="sec"><h2>Posting periods</h2>${tbl(['Period','Status','Action'],D.periods.map(p=>[mName(p.id),p.open?stat('Open'):stat('Closed'),`<button class="btn sm" data-a="tper" data-id="${p.id}" ${can('approve')?'':'disabled'}>${p.open?'Close (skip checklist)':'Reopen'}</button>`]))}<div class="pad tools"><input class="inp" id="np" placeholder="YYYY-MM" maxlength="7" aria-label="New period"><button class="btn sm p" data-a="aper" ${ad?'':'disabled'}>Add period</button></div></div>
   <div class="sec"><h2>Simulation key date</h2><div class="pad"><p style="margin:0 0 10px">Default posting date and the “today” used for ageing, liquidity and the payment run.</p><div class="tools"><input type="date" class="inp" id="kd" value="${D.keyDate}" aria-label="Key date"><button class="btn sm p" data-a="setkd">Apply</button></div></div></div>
-  <div class="sec"><h2>Training personas</h2>${tbl(['Persona','Role','Can'],USERS.map(u=>[u.name,u.role,esc(u.desc)]))}</div>
-  <div class="sec"><h2>Training data</h2><div class="pad"><p style="margin:0 0 10px">Data is saved in this browser only – records do not appear on other devices or for other users. Resetting restores the original fictional company and clears the audit trail.</p><button class="btn d" data-a="reset" ${ad?'':'disabled'}>Reset training data</button>${ad?'':'<p class="note">Administrator persona only.</p>'}</div></div></div>`}
+  <div class="sec"><h2>Users and roles</h2>${tbl(['User','Role','Responsibilities'],USERS.map(u=>[u.name,u.role,esc(u.desc)]))}</div>
+  <div class="sec"><h2>Demo data</h2><div class="pad"><p style="margin:0 0 10px">Data is saved in this browser only – records do not appear on other devices or for other users. Resetting restores the original company data and clears the audit trail.</p><button class="btn d" data-a="reset" ${ad?'':'disabled'}>Reset demo data</button>${ad?'':'<p class="note">Finance Controller only.</p>'}</div></div></div>`}
 };
 
 /* --- planning tabs --- */
@@ -747,10 +747,10 @@ gst(){const p=S.gstP,g=gstFor(p),done=D.gst[p];
   return `<div class="tools">${sel('gstP',perOpts(),'Return period')}</div>
   <div class="grid2"><div class="sec"><h2>Tax by code – ${mName(p)}</h2>${tbl(['Direction','Tax code','Invoices','Taxable value (₹)','Tax (₹)'],rows,[2,3,4])}</div>
   <div class="sec"><h2>Settlement</h2>${tbl(['Item','₹'],[['Output GST (ledger)',fmt(g.out)],['Input GST (ledger)',fmt(g.inp)],['Credit brought forward',fmt(g.bf)],totRow(['Net payable',fmt(g.pay)]),['Credit carried forward',fmt(g.cf)]],[1])}
-   <div class="pad">${done?`${stat('Settled')} <span class="note">in ${done.je} on ${done.date} by ${esc(done.by)}</span>`:`<button class="btn p sm" data-a="settlegst" ${can('approve')&&prevDone?'':'disabled'}>Post settlement${g.pay?` – pay ₹${fmt(g.pay)} from HDFC`:''}</button>${prevDone?'':`<p class="note">Settle ${mName(pp)} first.</p>`}${can('approve')?'':'<p class="note">Settlement needs the Instructor or Administrator persona.</p>'}`}</div></div></div>
+   <div class="pad">${done?`${stat('Settled')} <span class="note">in ${done.je} on ${done.date} by ${esc(done.by)}</span>`:`<button class="btn p sm" data-a="settlegst" ${can('approve')&&prevDone?'':'disabled'}>Post settlement${g.pay?` – pay ₹${fmt(g.pay)} from HDFC`:''}</button>${prevDone?'':`<p class="note">Settle ${mName(pp)} first.</p>`}${can('approve')?'':'<p class="note">Settlement needs a Finance Manager or Finance Controller.</p>'}`}</div></div></div>
   <p class="note">The settlement offsets input tax against output tax, pays the balance from the HDFC account on the key date and carries any excess credit into the next period. Figures come from the ledger (0L), excluding earlier settlement postings.</p>`},
 codes(){return `<div class="sec">${tbl(['Code','Description','Rate','Used on invoices'],D.tax.map(t=>[t.code,esc(t.desc),(t.rate/100).toFixed(2)+'%',D.invoices.filter(i=>i.taxCode===t.code).length]),[2,3])}</div>
-  ${can('admin')?`<div class="sec"><h2>Add tax code</h2><div class="pad tools"><input class="inp" id="tcc" placeholder="Code e.g. G28" maxlength="6" aria-label="Code"><input class="inp" id="tcd" placeholder="Description" aria-label="Description"><input class="inp" id="tcr" placeholder="Rate %" inputmode="decimal" style="width:90px" aria-label="Rate"><button class="btn sm p" data-a="addtax">Add</button></div></div>`:'<p class="note">Tax codes are maintained by the Administrator persona.</p>'}<p class="note">Rates are fixed once a code exists, so posted tax always matches its code.</p>`},
+  ${can('admin')?`<div class="sec"><h2>Add tax code</h2><div class="pad tools"><input class="inp" id="tcc" placeholder="Code e.g. G28" maxlength="6" aria-label="Code"><input class="inp" id="tcd" placeholder="Description" aria-label="Description"><input class="inp" id="tcr" placeholder="Rate %" inputmode="decimal" style="width:90px" aria-label="Rate"><button class="btn sm p" data-a="addtax">Add</button></div></div>`:'<p class="note">Tax codes are maintained by the Finance Controller.</p>'}<p class="note">Rates are fixed once a code exists, so posted tax always matches its code.</p>`},
 ctl(){const posted=D.journals.filter(live),ub=posted.filter(j=>sum(j.lines,'dr')!==sum(j.lines,'cr'));
   const sod=posted.filter(j=>j.src==='Manual'&&j.by===j.approver);
   const tb=['0L','2L'].filter(l=>sum(Object.values(bal({ledger:l})))!==0);
@@ -795,7 +795,7 @@ rec(){const g=S.bank,lines=D.stmt.filter(s=>s.bank===g).sort((a,b)=>a.date<b.dat
   <div class="sec"><h2>Statement lines</h2>${tbl(['Date','Bank text','Amount (₹)','Status','Actions'],lines.map(s=>[s.date,esc(s.desc),sgn(s.amt),s.match?`${stat('Matched')} <small>${s.match.split(':')[0]}</small>`:stat('Unmatched'),s.match?`<button class="btn sm g" data-a="unmatch" data-id="${s.id}">Unmatch</button>`:(cands(s.amt)?`<button class="btn sm" data-a="matchst" data-id="${s.id}">Match… (${cands(s.amt)})</button>`:'')+`<button class="btn sm" data-a="postst" data-id="${s.id}" ${periodOpen(s.date)?'':'disabled title="Period closed"'}>Post ${s.amt<0?'as bank charge':'as interest'} & match</button><button class="btn sm d" data-a="delst" data-id="${s.id}">Delete</button>`]),[2])}</div>
   <div class="sec"><h2>Book entries not yet on the statement</h2>${tbl(['Date','Entry','Description','Amount (₹)'],r.ob.map(b=>[b.date,jlink(b.j.id),esc(b.j.desc),sgn(b.amt)]),[3])}</div>
   <p class="note">Proof: book balance ₹${fmt(r.book)} − items not on statement ₹${fmt(sum(r.ob,'amt'))} + unmatched statement lines ₹${fmt(sum(r.um,'amt'))} = ₹${fmt(check)} ${check===r.stBal?'= statement balance ✔':'≠ statement balance – check the opening balance'}. Auto-match pairs lines with the same amount within 7 days.</p>`},
-tr(){return `<div class="grid2"><div class="sec"><h2>Bank transfer</h2><div class="pad g2"><div><label class="fl" for="tf">From</label><select class="inp w" id="tf">${bankOpts('100000')}</select></div><div><label class="fl" for="tt">To</label><select class="inp w" id="tt">${bankOpts('100100')}</select></div><div><label class="fl" for="ta">Amount (₹)</label><input class="inp w" id="ta" inputmode="decimal"></div><div><label class="fl" for="td">Value date</label><input type="date" class="inp w" id="td" value="${D.keyDate}"></div></div><div class="pad" style="padding-top:0"><button class="btn p sm" data-a="transfer" ${can('approve')?'':'disabled'}>Post transfer</button>${can('approve')?'':'<p class="note">Treasury postings need the Instructor or Administrator persona.</p>'}</div></div>
+tr(){return `<div class="grid2"><div class="sec"><h2>Bank transfer</h2><div class="pad g2"><div><label class="fl" for="tf">From</label><select class="inp w" id="tf">${bankOpts('100000')}</select></div><div><label class="fl" for="tt">To</label><select class="inp w" id="tt">${bankOpts('100100')}</select></div><div><label class="fl" for="ta">Amount (₹)</label><input class="inp w" id="ta" inputmode="decimal"></div><div><label class="fl" for="td">Value date</label><input type="date" class="inp w" id="td" value="${D.keyDate}"></div></div><div class="pad" style="padding-top:0"><button class="btn p sm" data-a="transfer" ${can('approve')?'':'disabled'}>Post transfer</button>${can('approve')?'':'<p class="note">Treasury postings need a Finance Manager or Finance Controller.</p>'}</div></div>
   <div class="sec"><h2>Exchange rates</h2>${tbl(['Pair','Rate','Used for'],[['USD → INR',D.fx.USD,'USD journals (default rate) and group-currency reporting']],[1])}<div class="pad tools"><label class="fl" style="margin:0" for="fxr">USD 1 = ₹</label><input class="inp" id="fxr" inputmode="decimal" value="${D.fx.USD}" style="width:110px"><button class="btn sm" data-a="setfx" ${can('admin')?'':'disabled'}>Update rate</button></div></div></div>`}
 };
 
@@ -805,14 +805,14 @@ function jact(j){const u=S.user,a=can('approve');let s='';
   if(j.status==='Posted'&&a&&!j.rev&&!j.revOf)s+=`<button class="btn sm d" data-a="revj" data-id="${j.id}">Reverse</button>`;
   return s||'—'}
 function invView(type){const AR=type==='AR',q=S.iq.toLowerCase(),list=D.invoices.filter(i=>i.type===type&&(!q||(i.id+' '+i.party+' '+(i.ref||'')).toLowerCase().includes(q))&&(!S.ist||(S.ist==='Overdue'?isOpenInv(i)&&i.due<D.keyDate:i.status===S.ist))).slice().reverse(),c=can('create');
-  const acts=i=>{let s='';if(isOpenInv(i))s+=AR?`<button class="btn sm p" data-a="settle" data-id="${i.id}">Record receipt</button>`:`<button class="btn sm" data-a="settle" data-id="${i.id}" ${can('approve')?'':'disabled title="Payments need Instructor or Administrator"'}>Pay</button>`;
+  const acts=i=>{let s='';if(isOpenInv(i))s+=AR?`<button class="btn sm p" data-a="settle" data-id="${i.id}">Record receipt</button>`:`<button class="btn sm" data-a="settle" data-id="${i.id}" ${can('approve')?'':'disabled title="Payments need Finance Manager or Finance Controller"'}>Pay</button>`;
     if(i.status==='Pending'&&i.by===S.user.name)s+=`<button class="btn sm" data-a="editi" data-id="${i.id}">Edit</button><button class="btn sm d" data-a="deli" data-id="${i.id}">Withdraw</button>`;
     if(i.pays?.length)s+=`<button class="btn sm g" data-a="viewi" data-id="${i.id}">${AR?'Receipts':'Payments'} (${i.pays.length})</button>`;return s||'—'};
   const st=i=>isOpenInv(i)&&i.due<D.keyDate?stat('Overdue')+' '+stat(i.status):stat(i.status);
   let extra='';
   if(AR)extra=`<div class="sec"><h2>Receivables ageing at ${D.keyDate}</h2>${agingTable('AR')}</div>`;
   else{const due=D.invoices.filter(i=>i.type==='AP'&&isOpenInv(i));
-    extra=`<div class="sec"><h2>Payment run</h2><div class="pad"><div class="tools" style="margin:0"><label class="fl" style="margin:0" for="prd">Pay invoices due by</label><input type="date" class="inp" id="prd" value="${addDays(D.keyDate,30)}"><label class="fl" style="margin:0" for="prb">from</label><select class="inp" id="prb">${bankOpts('100000')}</select><button class="btn sm p" data-a="payrun" ${can('approve')&&due.length?'':'disabled'}>Create proposal</button></div><p class="note">${due.length} approved invoice(s) open, ₹${fmt(sum(due.map(outst)))} outstanding. ${can('approve')?'':'Payments need the Instructor or Administrator persona.'}</p></div></div><div class="sec"><h2>Payables ageing at ${D.keyDate}</h2>${agingTable('AP')}</div>`}
+    extra=`<div class="sec"><h2>Payment run</h2><div class="pad"><div class="tools" style="margin:0"><label class="fl" style="margin:0" for="prd">Pay invoices due by</label><input type="date" class="inp" id="prd" value="${addDays(D.keyDate,30)}"><label class="fl" style="margin:0" for="prb">from</label><select class="inp" id="prb">${bankOpts('100000')}</select><button class="btn sm p" data-a="payrun" ${can('approve')&&due.length?'':'disabled'}>Create proposal</button></div><p class="note">${due.length} approved invoice(s) open, ₹${fmt(sum(due.map(outst)))} outstanding. ${can('approve')?'':'Payments need a Finance Manager or Finance Controller.'}</p></div></div><div class="sec"><h2>Payables ageing at ${D.keyDate}</h2>${agingTable('AP')}</div>`}
   return `<div class="tools">${c?`<button class="btn p sm" data-a="newi" data-t="${type}">+ ${AR?'Customer':'Supplier'} invoice</button>`:''}${search('iq',`Search invoice, ${AR?'customer':'supplier'} or reference`)}${sel('ist',[['','All statuses'],...['Pending','Open','Partially paid','Paid','Overdue','Rejected'].map(s=>[s,s])],'Status')}</div>
   <div class="sec">${tbl(['Invoice',AR?'Customer':'Supplier','Reference','Date','Due','Gross (₹)','Outstanding (₹)','Status','Actions'],list.map(i=>[i.id+(i.po?`<br><small class="note">PO ${i.po} · ${i.qty} units</small>`:''),esc(i.party),esc(i.ref||'—'),i.date,i.due,fmt(i.gross)+`<br><small class="note">net ${fmt(i.net)} + ${i.taxCode} ${fmt(i.tax)}</small>`,fmt(outst(i)),st(i),acts(i)]),[5,6])}</div>${extra}
   <p class="note">Approval posts ${AR?'Dr Receivables / Cr Revenue + Cr Output GST':'Dr Expense (or GR/IR for PO invoices) + Dr Input GST / Cr Payables'}; ${AR?'a receipt posts Dr Bank / Cr Receivables':'a payment posts Dr Payables / Cr Bank'}. Allocations cannot exceed the outstanding amount, and each bank reference can be used only once.</p>`}
@@ -859,7 +859,7 @@ function openAsset(a){const ar=l=>a?.areas[l]||{m:l==='0L'?'SL':'DB',life:5,rate
   ${a?'<p class="note">Cost and date are fixed after capitalisation. To change them, cancel the asset (this reverses the acquisition) and create it again.</p>':'<p class="note">Creating the asset posts the acquisition: Dr 120000 Fixed Assets – Cost / Cr the selected account.</p>'}
   <div class="err" id="ae" role="alert"></div><div class="ft"><button type="button" class="btn g" data-a="close">Cancel</button><button type="button" class="btn p" data-a="saveasset">${a?'Save changes':'Create and capitalise'}</button></div></form>`)}
 function openPO(){dlg(`<form id="pf"><h2>New purchase order</h2><label class="fl" for="pv">Supplier *</label><input class="inp w" id="pv" maxlength="80"><label class="fl" for="pi">Item *</label><input class="inp w" id="pi" maxlength="80"><div class="g2"><div><label class="fl" for="pq">Quantity *</label><input class="inp w" id="pq" inputmode="numeric"></div><div><label class="fl" for="pp">Unit price (₹, net) *</label><input class="inp w" id="pp" inputmode="decimal"></div></div><div class="err" id="pe" role="alert"></div><div class="ft"><button type="button" class="btn g" data-a="close">Cancel</button><button type="button" class="btn p" data-a="savepo">Create PO</button></div></form>`)}
-function openTask(t){const ed=!!t;t=t||{title:'',type:'Planning',due:D.keyDate,assignee:S.user.name,reviewer:S.user.name==='Ravi Instructor'?'Meera Admin':'Ravi Instructor',notes:''};const uo=v=>USERS.map(u=>`<option ${u.name===v?'selected':''}>${u.name}</option>`).join('');
+function openTask(t){const ed=!!t;t=t||{title:'',type:'Planning',due:D.keyDate,assignee:S.user.name,reviewer:S.user.name==='Rahul Mehta'?'Anita Desai':'Rahul Mehta',notes:''};const uo=v=>USERS.map(u=>`<option ${u.name===v?'selected':''}>${u.name}</option>`).join('');
   dlg(`<form id="tf2"><h2>${ed?'Edit':'New'} planning task</h2><label class="fl" for="kt">Title *</label><input class="inp w" id="kt" maxlength="80" value="${esc(t.title)}"><div class="g2"><div><label class="fl" for="kty">Type</label><select class="inp w" id="kty">${['Planning','Review','Approval','Simulation'].map(x=>`<option ${x===t.type?'selected':''}>${x}</option>`).join('')}</select></div><div><label class="fl" for="kd2">Due date *</label><input type="date" class="inp w" id="kd2" value="${t.due}"></div><div><label class="fl" for="ka">Assigned to</label><select class="inp w" id="ka">${uo(t.assignee)}</select></div><div><label class="fl" for="kr">Reviewer</label><select class="inp w" id="kr">${uo(t.reviewer)}</select></div></div><label class="fl" for="kn">Notes</label><textarea class="inp w" id="kn" rows="2" maxlength="300">${esc(t.notes||'')}</textarea>${ed?`<p class="note">Status: ${t.status}</p>`:''}<div class="err" id="ke" role="alert"></div><div class="ft">${ed&&(can('admin')||t.assignee===S.user.name)?`<button type="button" class="btn d" data-a="deltask" data-id="${t.id}">Delete</button>`:''}<button type="button" class="btn g" data-a="close">Cancel</button><button type="button" class="btn p" data-a="savetask" data-id="${t.id||''}">Save</button></div></form>`)}
 
 /* ===== actions ===== */
@@ -868,8 +868,8 @@ function findI(id){const i=D.invoices.find(x=>x.id===id);if(!i)throw Error(`Invo
 const refUsed=r=>D.invoices.find(i=>(i.pays||[]).some(p=>p.ref.toLowerCase()===r.toLowerCase()));
 function approveInvoice(i){
   if(i.status!=='Pending')throw Error('Only pending invoices can be approved.');
-  need('approve','Your persona cannot approve invoices.');
-  if(i.by===S.user.name&&S.user.role!=='Administrator')throw Error('Separation of duties: you cannot approve your own invoice.');
+  need('approve','Your role cannot approve invoices.');
+  if(i.by===S.user.name&&S.user.role!=='Finance Controller')throw Error('Separation of duties: you cannot approve your own invoice.');
   let p=null;if(i.po){p=D.pos.find(x=>x.id===i.po);if(!p)throw Error(`PO ${i.po} no longer exists.`);if(p.ir+i.qty>p.qty)throw Error(`PO ${p.id} only has ${p.qty-p.ir} unit(s) left to invoice.`)}
   const ls=i.type==='AR'?[L('110000',i.gross,0),L('400000',0,i.net),L('220000',0,i.tax)]:[L(p?'210000':i.exp,i.net,0),L('115000',i.tax,0),L('200000',0,i.gross)];
   const j=autoPost(`Invoice ${i.id} – ${i.party}`,i.date,ls,'Invoice');i.status='Open';i.je=j.id;i.approver=S.user.name;if(p){p.ir+=i.qty;p.irVal+=i.net}audit('Approved invoice',i.id);
@@ -890,7 +890,7 @@ function act(el){const a=el.dataset.a,id=el.dataset.id;
   case'tab':S.tabs[el.dataset.v]=el.dataset.k;break;
   case'close':closeDlg();return;
   /* journals */
-  case'newj':need('create','Your persona cannot create journals. Switch to Asha (Student) or Meera (Administrator).');openJ();return;
+  case'newj':need('create','Your role cannot create journals. Switch user to Priya Sharma or Anita Desai.');openJ();return;
   case'editj':{const j=findJ(id);if(j.status!=='Draft'||j.by!==S.user.name)throw Error('Only your own drafts can be edited. Posted entries are corrected by reversal.');openJ(j);return}
   case'addline':$('#jlines').insertAdjacentHTML('beforeend',lineRow());$('#jlines .ln:last-child select').focus();return;
   case'rmline':{if($$('#jlines .ln').length<=2){$('#je').textContent='A journal needs at least two lines.';return}el.closest('.ln').remove();jsum();return}
@@ -903,7 +903,7 @@ function act(el){const a=el.dataset.a,id=el.dataset.id;
   case'revj':{need('approve');const j=findJ(id);const r=prompt(`Reverse ${id}? A new entry with opposite debits and credits will be posted. Reason (required):`);if(r===null)return;if(!r.trim())throw Error('A reversal reason is required.');const x=reverseJ(j,r.trim());toast(`${j.id} reversed by ${x.id}${x.date!==j.date?' (posted on key date – original period closed)':''}`);break}
   case'csv':{const q=v=>'"'+String(v).replace(/"/g,'""')+'"',rows=[['Date','Entry','Ledger','Account','Description','Debit','Credit']];D.journals.filter(j=>inLedger(j,S.ledger)).forEach(j=>j.lines.forEach(l=>{if(!S.fa||S.fa===l.acc)rows.push([j.date,j.id,S.ledger,l.acc,q(j.desc),(l.dr/100).toFixed(2),(l.cr/100).toFixed(2)])}));const x=document.createElement('a');x.href=URL.createObjectURL(new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'}));x.download=`ledger-${S.ledger}.csv`;x.click();toast(`Exported ${rows.length-1} line(s)`);return}
   /* invoices */
-  case'newi':need('create','Your persona cannot create invoices. Switch to Asha (Student) or Meera (Administrator).');openI(el.dataset.t);return;
+  case'newi':need('create','Your role cannot create invoices. Switch user to Priya Sharma or Anita Desai.');openI(el.dataset.t);return;
   case'editi':{const i=findI(id);if(i.status!=='Pending'||i.by!==S.user.name)throw Error('Only your own pending invoices can be edited.');openI(i.type,i);return}
   case'deli':{const i=findI(id);if(i.status!=='Pending'||i.by!==S.user.name)throw Error('Only your own pending invoices can be withdrawn.');if(!confirm(`Withdraw and delete ${id}? Nothing has been posted for it.`))return;D.invoices=D.invoices.filter(x=>x!==i);audit('Withdrew pending invoice',id);toast(id+' withdrawn');break}
   case'viewi':{const i=findI(id);dlg(`<div class="dlgb"><h2>${i.type==='AR'?'Receipts':'Payments'} – ${i.id}</h2>${tbl(['Date','Reference','Bank','Entry','Amount (₹)'],i.pays.map(p=>[p.date,esc(p.ref),bankName(p.bank),jlink(p.je),fmt(p.amt)]),[4],`<tr class="tot"><td>Total</td><td></td><td></td><td></td><td class="n">${fmt(i.paid)}</td></tr>`)}<p class="note">Outstanding ₹${fmt(outst(i))}</p><div class="ft"><button class="btn g" data-a="close">Close</button></div></div>`);return}
@@ -919,7 +919,7 @@ function act(el){const a=el.dataset.a,id=el.dataset.id;
     const i={id:`${t}-${++D.iseq[t]}`,type:t,...v,status:'Pending',by:S.user.name,paid:0,pays:[]};D.invoices.push(i);audit('Submitted invoice',i.id);closeDlg();toast(`${i.id} submitted for approval`);break}
   case'appi':approveInvoice(findI(id));toast(id+' approved and posted');break;
   case'reji':{need('approve');const i=findI(id);if(i.status!=='Pending')throw Error('Only pending invoices can be rejected.');const r=prompt(`Reason for rejecting ${id} (required):`);if(r===null)return;if(!r.trim())throw Error('A rejection reason is required.');i.status='Rejected';audit('Rejected invoice – '+r.trim(),id);toast(id+' rejected');break}
-  case'settle':{const i=findI(id);if(!isOpenInv(i))throw Error(i.status==='Paid'?'This invoice is already fully settled – duplicate payment blocked.':'Only approved invoices can be settled.');if(i.type==='AP')need('approve','Payments need the Instructor or Administrator persona.');openSettle(i);return}
+  case'settle':{const i=findI(id);if(!isOpenInv(i))throw Error(i.status==='Paid'?'This invoice is already fully settled – duplicate payment blocked.':'Only approved invoices can be settled.');if(i.type==='AP')need('approve','Payments need a Finance Manager or Finance Controller.');openSettle(i);return}
   case'dosettle':{const i=findI($('#sf').dataset.id),amt=cents($('#sa').value),d=$('#sd').value,bank=$('#sb').value,ref=$('#sr').value.trim(),err=m=>{$('#se').textContent=m};
     if(!isOpenInv(i))return err('This invoice is already settled.');if(!(amt>0))return err('Enter an amount greater than zero.');if(amt>outst(i))return err(`The amount exceeds the outstanding balance of ₹${fmt(outst(i))}.`);if(!isDate(d))return err('Enter a valid value date.');if(!ref)return err('Enter the bank reference (UTR) – it prevents duplicate receipts and payments.');
     const u=refUsed(ref);if(u)return err(`Duplicate: reference ${ref} is already recorded on ${u.id}.`);
@@ -933,7 +933,7 @@ function act(el){const a=el.dataset.a,id=el.dataset.id;
     const tot=sum(its.map(outst)),j=autoPost(`Payment run ${D.keyDate} – ${its.length} invoice(s)`,D.keyDate,[L('200000',tot,0),L(bank,0,tot)],'Payment run');
     its.forEach(i=>{const amt=outst(i);i.paid=(i.paid||0)+amt;i.pays=i.pays||[];i.pays.push({je:j.id,amt,date:D.keyDate,ref:'PRUN-'+j.id+'-'+i.id,bank});i.status='Paid'});audit(`Payment run paid ${its.map(i=>i.id).join(', ')}`,j.id);closeDlg();toast(`Paid ${its.length} invoice(s) – ₹${fmt(tot)} (${j.id})`);break}
   /* purchasing */
-  case'newpo':need('create','Your persona cannot create purchase orders.');openPO();return;
+  case'newpo':need('create','Your role cannot create purchase orders.');openPO();return;
   case'savepo':{const v=$('#pv').value.trim(),it=$('#pi').value.trim(),qs=$('#pq').value.trim(),q=Number(qs),pr=cents($('#pp').value);if(!v||!it||!/^\d+$/.test(qs)||!(q>0)||pr<=0){$('#pe').textContent='Enter supplier, item, a whole quantity above zero and a unit price.';return}
     const p={id:String(++D.poseq),vendor:v,item:it,qty:q,price:pr,gr:0,ir:0,grVal:0,irVal:0,adj:0,date:D.keyDate,by:S.user.name};D.pos.push(p);audit('Created purchase order',p.id);closeDlg();toast(`PO ${p.id} created`);break}
   case'gr':{const p=D.pos.find(x=>x.id===id);if(!p)throw Error('PO not found.');const open=p.qty-p.gr,r=prompt(`Quantity received for PO ${p.id} – ${p.item} (1 to ${open}):`,String(open));if(r===null)return;if(!/^\d+$/.test(r.trim())||+r<1||+r>open)throw Error(`Enter a whole quantity between 1 and ${open}.`);const q=+r;
@@ -941,7 +941,7 @@ function act(el){const a=el.dataset.a,id=el.dataset.id;
   case'clrgr':{need('approve');const p=D.pos.find(x=>x.id===id),g=grir(p);if(!g.clear)throw Error('Nothing to clear on this PO.');const d=g.d;
     autoPost(`GR/IR price difference PO ${p.id}`,D.keyDate,d>0?[L('210000',d,0),L('510000',0,d)]:[L('510000',-d,0),L('210000',0,-d)],'GR/IR clearing');p.adj+=d;toast(`PO ${p.id} cleared (₹${fmt(Math.abs(d))})`);break}
   /* fixed assets */
-  case'newasset':need('create','Your persona cannot create assets. Switch to Asha (Student) or Meera (Administrator).');openAsset();return;
+  case'newasset':need('create','Your role cannot create assets. Switch user to Priya Sharma or Anita Desai.');openAsset();return;
   case'editasset':{const x=D.assets.find(z=>z.id===id);if(!x)throw Error('Asset not found.');if(hasDep(x))throw Error('Depreciation has been posted – the asset can no longer be edited.');need('create');openAsset(x);return}
   case'saveasset':{const eid=$('#af').dataset.id,ex=eid?D.assets.find(z=>z.id===eid):null,err=m=>{$('#ae').textContent=m};
     const name=$('#an').value.trim(),cls=$('#acl').value,acq=ex?ex.acq:$('#ad').value,cost=ex?ex.cost:cents($('#ac').value),salvage=cents($('#as').value);
@@ -961,12 +961,12 @@ function act(el){const a=el.dataset.a,id=el.dataset.id;
     dlg(`<div class="dlgb"><h2>Depreciation schedule – ${x.id}</h2><p class="note" style="margin-top:0">${esc(x.name)} · cost ₹${fmt(x.cost)} · residual ₹${fmt(x.salvage)} · ✔ = posted</p>${tbl(['Period','0L depreciation','0L NBV','2L depreciation','2L NBV'],rows,[1,2,3,4])}${n===60?'<p class="note">First 60 months shown.</p>':''}<div class="ft"><button class="btn g" data-a="close">Close</button></div></div>`);return}
   case'rundep':{const res=runDep(el.dataset.p||S.closeP);toast(`Depreciation posted: ${res.join(' · ')}`);break}
   /* close */
-  case'signoff':{need('approve','Sign-off needs the Instructor or Administrator persona.');const p=S.closeP,k=el.dataset.k;D.close[p]=D.close[p]||{};if(D.close[p][k]){delete D.close[p][k];audit('Withdrew close sign-off '+k,p)}else{D.close[p][k]={by:S.user.name,t:stamp()};audit('Close sign-off '+k,p)}break}
+  case'signoff':{need('approve','Sign-off needs a Finance Manager or Finance Controller.');const p=S.closeP,k=el.dataset.k;D.close[p]=D.close[p]||{};if(D.close[p][k]){delete D.close[p][k];audit('Withdrew close sign-off '+k,p)}else{D.close[p][k]={by:S.user.name,t:stamp()};audit('Close sign-off '+k,p)}break}
   case'closeper':{need('approve');const p=S.closeP,ch=closeChecks(p);if(ch.some(c=>!c.ok))throw Error('Complete every checklist item first.');if(!confirm(`Close ${mName(p)}? No further postings will be accepted into it.`))return;D.periods.find(x=>x.id===p).open=false;audit('Closed period',p);toast(`${mName(p)} closed`);break}
-  case'tper':{need('approve','Only the Instructor or Administrator persona can open or close periods.');const p=D.periods.find(x=>x.id===id);if(!confirm(`${p.open?'Close':'Reopen'} ${mName(id)}?`))return;p.open=!p.open;audit((p.open?'Reopened':'Closed')+' period',id);toast(`Period ${id} ${p.open?'reopened':'closed'}`);break}
+  case'tper':{need('approve','Only a Finance Manager or Finance Controller can open or close periods.');const p=D.periods.find(x=>x.id===id);if(!confirm(`${p.open?'Close':'Reopen'} ${mName(id)}?`))return;p.open=!p.open;audit((p.open?'Reopened':'Closed')+' period',id);toast(`Period ${id} ${p.open?'reopened':'closed'}`);break}
   case'aper':{need('admin');const v=$('#np').value.trim();if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(v))throw Error('Use the format YYYY-MM.');if(D.periods.some(p=>p.id===v))throw Error('Period already exists.');D.periods.push({id:v,open:true});D.periods.sort((a,b)=>a.id<b.id?-1:1);audit('Added period',v);toast('Period added');break}
   case'setkd':{const v=$('#kd').value;if(!isDate(v))throw Error('Choose a valid date.');D.keyDate=v;audit('Changed key date',v);toast('Key date set to '+v);break}
-  case'reset':{need('admin');if(!confirm('Reset all training data? Every transaction you created will be deleted.'))return;const u=S.user;seed();S.user=u;audit('Reset training data','all');toast('Training data reset');break}
+  case'reset':{need('admin');if(!confirm('Reset all demo data? Every transaction you created will be deleted.'))return;const u=S.user;seed();S.user=u;audit('Reset demo data','all');toast('Demo data reset');break}
   /* planning */
   case'copyv':{const f=$('#cpf').value,t=S.ver;if(f===t)throw Error('Choose a different source version.');if(!confirm(`Overwrite ${t} with a copy of ${f}?`))return;D.plan[t]=JSON.parse(JSON.stringify(D.plan[f]));audit(`Copied plan ${f} → ${t}`,t);toast(`${f} copied into ${t}`);break}
   case'savesim':{const v=$('#dv').value;D.plan[v]=simulate(D.drv);audit('Applied driver simulation to '+v,v);toast(`Drivers applied to ${v} – see Version comparison`);break}
@@ -1034,7 +1034,7 @@ document.addEventListener('input',e=>{const t=e.target;
   if(t.closest('#if')){if(t.id==='iq'){const p=D.pos.find(x=>x.id===$('#ipo').value);if(p)$('#ia').value=((parseInt(t.value,10)||0)*p.price/100).toFixed(2)}itot()}});
 document.addEventListener('change',e=>{const t=e.target;if(!SESSION)return;
   if(t.id==='fa'){S.fa=t.value;draw()}
-  else if(t.id==='su'){const u=USERS.find(x=>x.id===t.value);if(!u||!SESSION.personas.includes(u.id)){toast('This account is not authorised for that persona.',1);draw();return}S.user=u;audit('Switched persona to '+u.name,'session');toast('Now working as '+u.name+' ('+u.role+')');draw()}
+  else if(t.id==='su'){const u=USERS.find(x=>x.id===t.value);if(!u||!SESSION.personas.includes(u.id)){toast('This account is not authorised for that user role.',1);draw();return}S.user=u;audit('Switched user to '+u.name,'session');toast('Now working as '+u.name+' ('+u.role+')');draw()}
   else if(t.dataset.set){S[t.dataset.set]=t.value;draw()}
   else if(t.dataset.plan){const[v,a,m]=t.dataset.plan.split('|'),c=cents(t.value);if(c<0){toast('Plan values cannot be negative.',1);draw();return}D.plan[v]=D.plan[v]||{};D.plan[v][a]=D.plan[v][a]||{};D.plan[v][a][m]=c;audit(`Updated plan ${v} ${a} ${m}`,fmt(c));draw()}
   else if(t.dataset.drv){const v=parseFloat(t.value);if(Number.isFinite(v)&&v>=0&&v<=1e9){D.drv[t.dataset.drv]=v;draw();$('#d-'+t.dataset.drv)?.focus()}else{toast('Drivers must be zero or positive numbers.',1);draw()}}

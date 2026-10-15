@@ -42,11 +42,11 @@ browser (see below).
 After sign-in the account works as one of three training personas, switchable
 from the top bar. Permissions come from the persona role, not from the email:
 
-| Persona | Role | Can |
+| User | Role | Can |
 | --- | --- | --- |
-| Asha Student | Student | prepare journals, invoices, POs, assets, plan inputs |
-| Ravi Instructor | Instructor | approve/post, payments, depreciation, close |
-| Meera Admin | Administrator | everything, incl. periods, tax codes, FX, reset |
+| Priya Sharma | Accountant | prepare journals, invoices, POs, assets, plan inputs |
+| Rahul Mehta | Finance Manager | approve/post, payments, depreciation, close |
+| Anita Desai | Finance Controller | everything, incl. periods, tax codes, FX, reset |
 
 Separation of duties: a preparer cannot approve their own document (the
 Administrator may override; overrides are flagged in Compliance controls).

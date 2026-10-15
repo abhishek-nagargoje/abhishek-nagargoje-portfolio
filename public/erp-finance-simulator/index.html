@@ -562,7 +562,7 @@ async function doLogin(){
   try{
     const acc=await Auth.signIn(email,pw);await settle();
     fails=0;SESSION=acc;Object.assign(S,freshState());
-    S.user=USERS.find(u=>u.id===acc.personas[0]);S.page='pub';
+    S.user=USERS.find(u=>u.id===acc.personas[0]);S.page='app';
     audit(`Signed in (${acc.email}) as ${S.user.name}`,'session',S.user.name);draw();window.scrollTo(0,0);
   }catch(e){
     await settle();

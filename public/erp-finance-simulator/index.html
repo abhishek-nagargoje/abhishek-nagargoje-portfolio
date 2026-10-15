@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SAP Finance Training Simulator</title>
-<meta name="description" content="SAP Finance Training Simulator (unofficial): planning and analysis, parallel-ledger accounting and close, fixed assets, payables and receivables, GST and treasury – with fictional training data.">
+<title>SAP Finance</title>
+<meta name="description" content="SAP Finance: planning and analysis, parallel-ledger accounting and close, fixed assets, payables and receivables, GST and treasury – with fictional training data.">
 <meta name="robots" content="noindex">
 <style>
 :root{--blue:#0a6ed1;--blue-d:#0854a0;--hd:#1d2d3e;--ink:#1d2d3e;--mut:#556b82;--line:#d9d9d9;--line2:#e5e5e5;--bg:#f5f6f7;--shell:#1d2d3e;--ok:#188918;--err:#bb0000;--warn:#c35500;--sh:0 2px 8px rgba(0,0,0,.16);color-scheme:light;font-family:"72","72full",Arial,Helvetica,sans-serif}
@@ -56,7 +56,7 @@ svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .hero{height:168px;margin:20px 0 0;border-radius:8px;background:linear-gradient(120deg,#002a86 0%,#0a6ed1 60%,#4db1ff 100%);position:relative;overflow:hidden}
 .hero svg{position:absolute;right:-10px;bottom:0;height:100%;opacity:.9}
 .pub-tag{display:inline-block;font-size:12px;font-weight:700;color:var(--blue);background:#ebf5fe;border:1px solid #c9e2fa;border-radius:4px;padding:2px 8px;margin:24px 0 0}
-.pub-w h1{font-size:22px;line-height:1.25;margin:12px 0 16px;color:var(--hd);font-weight:700;max-width:640px}
+.pub-w h1{font-size:22px;line-height:1.25;margin:28px 0 16px;color:var(--hd);font-weight:700;max-width:640px}
 .intro{margin:0 0 30px;font-size:16px;line-height:1.55;max-width:680px;color:var(--hd)}
 .acc{border-top:1px solid var(--line)}.acc:first-child{border-top:0}.accs{border-bottom:1px solid var(--line)}
 .acc>button{display:flex;gap:20px;align-items:center;width:100%;text-align:left;background:none;border:0;min-height:61px;padding:10px 4px 10px 16px;font-size:16px;letter-spacing:-.1px;line-height:1.3;font-weight:600;color:var(--hd)}
@@ -167,7 +167,7 @@ fieldset{border:1px solid var(--line2);border-radius:8px;margin:12px 0 0;padding
 <script>window.ERP_SIM_CONFIG=window.ERP_SIM_CONFIG||{};</script>
 <script>
 /* =====================================================================
-   SAP Finance Training Simulator — independent training application.
+   SAP Finance demo application (independent, fictional data).
    Unofficial: not provided, affiliated with or endorsed by SAP SE, and not connected to any SAP system.
    Fictional data, saved in this browser (localStorage). Money is held as
    integer paise so ledger arithmetic never accumulates float error.
@@ -476,7 +476,7 @@ load();
 
 /* ===== product page (reference screens) ===== */
 const CATS=[
- {t:'Overview',d:'A single, consistent set of books drives planning, accounting, operations, compliance and treasury. Every number in this simulator comes from posted journal entries, so reports, cash and tax always agree.',steps:[]},
+ {t:'Overview',d:'A single, consistent set of books drives planning, accounting, operations, compliance and treasury. Every number in this application comes from posted journal entries, so reports, cash and tax always agree.',steps:[]},
  {t:'Financial planning and analysis',d:'Plan, simulate and compare versions against posted actuals.',steps:[
   ['tree','Driver-based planning','Model revenue and cost with a value driver tree – units, price, cost ratios and headcount – and save the result as a named scenario or plan version.','plan','drv'],
   ['cal','Planning calendar','Organize planning and simulation processes by using calendar tasks: create tasks, make assignments, and add reviewers to different task types.','plan','cal'],
@@ -521,31 +521,29 @@ function pub(){
       <div class="tn"><button class="circ" data-a="prev" data-i="${i}" aria-label="Previous step" ${st===0?'disabled':''}>${ic('prev')}</button><span aria-live="polite">Step ${st+1} of ${c.steps.length}</span><button class="circ" data-a="next" data-i="${i}" aria-label="Next step" ${st===c.steps.length-1?'disabled':''}>${ic('next')}</button></div>
       <button class="link trylink" data-a="try" data-v="${s[3]}" data-t="${s[4]||''}">Try this step in the workspace ›</button>`;
     return `<div class="acc"><button data-a="acc" data-i="${i}" aria-expanded="${open}" aria-controls="p${i}">${ic('chev')}<span>${c.t}</span></button>${open?`<div class="pn" id="p${i}">${inner}</div>`:''}</div>`}).join('');
-  return `<header class="pub-h"><div class="t">SAP Finance<span>Training Simulator</span></div><span style="flex:1"></span><button class="ddb" data-a="menu" aria-label="Open menu" aria-expanded="${S.menu}" aria-haspopup="menu">${ic('down')}</button>
+  return `<header class="pub-h"><div class="t">SAP Finance<span>Workspace</span></div><span style="flex:1"></span><button class="ddb" data-a="menu" aria-label="Open menu" aria-expanded="${S.menu}" aria-haspopup="menu">${ic('down')}</button>
 ${S.menu?`<div class="menu" role="menu"><small>Signed in as ${esc(SESSION.email)}</small>${CATS.map((c,i)=>`<button role="menuitem" data-a="acc" data-i="${i}" data-only="1">${c.t}</button>`).join('')}<hr><button role="menuitem" data-a="launch">Open finance workspace</button><button role="menuitem" data-a="logout">Sign out</button></div>`:''}</header>
 <main class="pub-w"><div class="hero" aria-hidden="true"><svg viewBox="0 0 300 180"><g fill="#fff" fill-opacity=".16"><rect x="60" y="70" width="40" height="110"/><rect x="110" y="40" width="40" height="140"/><rect x="160" y="90" width="40" height="90"/><rect x="210" y="20" width="40" height="160"/></g><path d="M40 120l60-30 50 20 60-60 50 10" stroke="#fff" stroke-width="3" fill="none"/></svg></div>
-<span class="pub-tag">SAP Finance Training Simulator · unofficial</span>
 <h1>Discover new finance possibilities</h1>
-<p class="intro">Click through this demo to explore SAP finance processes in the training simulator.</p>
+<p class="intro">Click through this demo to explore SAP finance processes.</p>
 <div class="accs">${accs}</div>
-<section class="cta"><h2>See how SAP finance processes meet your finance team's needs</h2><div class="row"><button class="btn p lg" data-a="launch">Open the finance workspace</button></div><p class="note">Independent training simulator with fictional companies and data. Unofficial: not provided, affiliated with or endorsed by SAP SE, and not connected to any SAP system. SAP is a trademark of SAP SE.</p></section></main>
+<section class="cta"><h2>See how SAP finance processes meet your finance team's needs</h2><div class="row"><button class="btn p lg" data-a="launch">Open the finance workspace</button></div><p class="note">Demo with fictional data. Not affiliated with or endorsed by SAP SE. SAP is a trademark of SAP SE.</p></section></main>
 <button class="fab" data-a="chat" aria-label="Help and guidance" aria-expanded="${S.chat}">${ic('chat')}</button>
-${S.chat?`<div class="panel" role="dialog" aria-label="Help"><h3>How to use this simulator</h3><div>Open an area above and step through it, or choose <b>Try this step in the workspace</b>. In the workspace, switch the training persona from the top bar: prepare as <b>Asha (Student)</b>, approve as <b>Ravi (Instructor)</b>.<br><button class="btn sm p" data-a="launch">Open workspace</button><button class="btn sm g" data-a="logout">Sign out</button></div></div>`:''}`}
+${S.chat?`<div class="panel" role="dialog" aria-label="Help"><h3>How to use this application</h3><div>Open an area above and step through it, or choose <b>Try this step in the workspace</b>. In the workspace, switch the training persona from the top bar: prepare as <b>Asha (Student)</b>, approve as <b>Ravi (Instructor)</b>.<br><button class="btn sm p" data-a="launch">Open workspace</button><button class="btn sm g" data-a="logout">Sign out</button></div></div>`:''}`}
 
 /* ===== sign-in ===== */
-function loginView(){return `<div class="lg-wrap"><aside class="lg-side"><div class="brand"><span class="mark">ERP</span><div><b>SAP Finance</b>Training Simulator</div></div>
-  <h2>SAP Finance Training Simulator</h2><p>Practise end-to-end finance processes on one ledger with fictional training data.</p>
+function loginView(){return `<div class="lg-wrap"><aside class="lg-side"><div class="brand"><span class="mark">ERP</span><div><b>SAP Finance</b>Workspace</div></div>
+  <h2>SAP Finance</h2><p>Run end-to-end finance processes on one ledger.</p>
   <ul><li>Financial planning and analysis</li><li>Accounting, fixed assets and financial close</li><li>Payables, receivables and payments</li><li>GST compliance and audit trail</li><li>Treasury and bank reconciliation</li></ul>
   <svg class="deco" viewBox="0 0 300 180" aria-hidden="true"><g fill="#fff"><rect x="60" y="70" width="40" height="110"/><rect x="110" y="40" width="40" height="140"/><rect x="160" y="90" width="40" height="90"/><rect x="210" y="20" width="40" height="160"/></g></svg></aside>
  <main class="lg-main"><form class="lg-form" id="lf" novalidate autocomplete="on">
-  <div class="lg-mob"><span class="mark">ERP</span><div><b>SAP Finance</b><span style="color:var(--mut)">Training Simulator</span></div></div>
-  <span class="eyebrow">SAP Finance Training Simulator · unofficial</span>
-  <h1>Welcome to Finance</h1><p class="sub">Sign in to your finance training workspace.</p>
+  <div class="lg-mob"><span class="mark">ERP</span><div><b>SAP Finance</b><span style="color:var(--mut)">Workspace</span></div></div>
+    <h1>Welcome to Finance</h1><p class="sub">Sign in to your finance training workspace.</p>
   <div class="strip e" id="le" role="alert" hidden>${ic('alert')}<span id="let"></span></div>
   <label for="em">Email <span class="req" aria-hidden="true">*</span></label><input class="fld" id="em" name="email" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" required>
   <label for="pw">Password <span class="req" aria-hidden="true">*</span></label><div class="pwf"><input class="fld" id="pw" name="password" type="password" autocomplete="current-password" required><button type="button" id="pwt" aria-label="Show password" aria-pressed="false" title="Show password">${ic('eye')}</button></div>
   <button type="submit" class="lg-btn" id="lb"><span>Sign In</span></button>
-  <p class="lg-note">Training environment with fictional data. ${Auth.mode==='demo'?'Demo sign-in is checked in this browser and is not production-grade security.':'Sign-in is provided by the configured authentication service.'} Unofficial: not provided, affiliated with or endorsed by SAP SE, and not connected to any SAP system.</p>
+  <p class="lg-note">Demo environment with fictional data. Not affiliated with or endorsed by SAP SE.</p>
  </form></main></div>`}
 function loginMsg(m){const b=$('#le');if(!b)return;if(!m){b.hidden=true;return}$('#let').textContent=m;b.hidden=false}
 async function doLogin(){
@@ -591,9 +589,9 @@ const jlink=id=>`<button class="link" style="font-size:13.5px;padding:0" data-a=
 
 function shell(){
   const nb=pendingCount(),allowed=USERS.filter(u=>SESSION.personas.includes(u.id));
-  return `<div class="shell"><header class="sb"><button class="ib hm" data-a="nav" aria-label="Toggle navigation" aria-expanded="${S.nav}">${ic('menu')}</button><span class="mark">ERP</span><span class="ttl">SAP Finance Training</span><span style="flex:1"></span><span class="co" style="font-size:12px;opacity:.85;white-space:nowrap">Training Co. (fictional) · key date ${D.keyDate}</span><button class="ib" data-a="view" data-v="approvals" aria-label="Approvals: ${nb} waiting" title="Approvals">${ic('bell')}${nb?`<span class="bdg">${nb}</span>`:''}</button>
+  return `<div class="shell"><header class="sb"><button class="ib hm" data-a="nav" aria-label="Toggle navigation" aria-expanded="${S.nav}">${ic('menu')}</button><span class="mark">ERP</span><span class="ttl">SAP Finance</span><span style="flex:1"></span><span class="co" style="font-size:12px;opacity:.85;white-space:nowrap">Training Co. (fictional) · key date ${D.keyDate}</span><button class="ib" data-a="view" data-v="approvals" aria-label="Approvals: ${nb} waiting" title="Approvals">${ic('bell')}${nb?`<span class="bdg">${nb}</span>`:''}</button>
 <label class="who" for="su" style="font-size:12px;opacity:.85">Working as</label><select id="su" aria-label="Training persona">${allowed.map(u=>`<option value="${u.id}" ${S.user.id===u.id?'selected':''}>${u.name} · ${u.role}</option>`).join('')}</select><span class="acct" title="Signed-in account">${esc(SESSION.email)}</span><button class="so" data-a="logout" aria-label="Sign out" title="Sign out">${ic('out')}<span>Sign out</span></button></header>
-<div class="body"><nav class="nav ${S.nav?'open':''}" aria-label="Finance navigation">${NAV.map(n=>n[0]==='—'?`<h6>${n[1]}</h6>`:`<button data-a="view" data-v="${n[0]}" data-t="${n[1]}" ${navCurrent(n[0],n[1])?'aria-current="page"':''}>${ic(n[3])}${n[2]}</button>`).join('')}<p class="note" style="padding:12px">SAP Finance Training Simulator · unofficial · fictional data.</p></nav>
+<div class="body"><nav class="nav ${S.nav?'open':''}" aria-label="Finance navigation">${NAV.map(n=>n[0]==='—'?`<h6>${n[1]}</h6>`:`<button data-a="view" data-v="${n[0]}" data-t="${n[1]}" ${navCurrent(n[0],n[1])?'aria-current="page"':''}>${ic(n[3])}${n[2]}</button>`).join('')}<p class="note" style="padding:12px">Demo data · not affiliated with SAP SE.</p></nav>
 <main class="main" id="main"><div class="bc">${AREA[S.view]} › ${PAGES[S.view]}</div><h1>${PAGES[S.view]}</h1>${VIEW[S.view]()}</main></div></div>`}
 
 const VIEW={

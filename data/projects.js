@@ -141,6 +141,30 @@ export const projectsData = [
 
   // ── Personal / experimental projects ─────────────────────────────────────
   {
+    id: "erp-finance-simulator",
+    title: "Cloud ERP Finance Simulator",
+    tier: "personal",
+    category: "Finance / ERP Training App",
+    role: "Solo Developer",
+    status: "Live",
+    shortDescription:
+      "A working finance ERP training simulator: planning and analysis, parallel-ledger accounting and close, payables and receivables, GST and treasury.",
+    description:
+      "An interactive training simulator modelled on the finance areas of modern cloud ERP suites. Every screen runs on one double-entry ledger, so planning, operations, tax and cash always agree. Role-based users (preparer, approver, admin) let learners practise separation of duties end to end. Uses fictional data saved in the browser.",
+    techStack: ["HTML", "CSS", "JavaScript"],
+    features: [
+      "Value driver tree simulation, plan versions, budget vs actuals and a planning calendar with reviewers",
+      "Journals with approval workflow, IFRS and local GAAP parallel ledgers, INR/USD currencies",
+      "Automated GR/IR reconciliation and a period-close checklist that locks periods",
+      "Supplier and customer invoices with GST, payment runs, receivables ageing",
+      "GST return and settlement with credit carry-forward, live compliance controls and audit trail",
+      "Cash position, weekly liquidity forecast and bank statement auto-matching",
+    ],
+    featured: true,
+    thumbnail: null,
+    links: { github: null, live: `${BASE}/erp-finance-simulator/index.html` },
+  },
+  {
     id: "client-photography-website",
     title: "Client Photography Website",
     company: null,

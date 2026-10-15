@@ -1,4 +1,4 @@
-# Finance ERP Training Simulator
+# SAP Finance Training Simulator
 
 A self-contained training app (`index.html` + `config.js`) that simulates cloud ERP
 finance processes on one double-entry ledger. It is an independent training

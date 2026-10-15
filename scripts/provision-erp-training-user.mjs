@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Creates (or updates) the Finance ERP Training Simulator account in Supabase
+// Creates (or updates) the SAP Finance Training Simulator account in Supabase
 // Auth. Only needed when public/erp-finance-simulator/config.js points the
 // simulator at a Supabase project. Run from your own machine only:
 //

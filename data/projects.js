@@ -142,7 +142,7 @@ export const projectsData = [
   // ── Personal / experimental projects ─────────────────────────────────────
   {
     id: "erp-finance-simulator",
-    title: "Finance ERP Training Simulator",
+    title: "SAP Finance Training Simulator",
     tier: "personal",
     category: "Finance / ERP Training App",
     role: "Solo Developer",

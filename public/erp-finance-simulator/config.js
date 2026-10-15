@@ -1,4 +1,4 @@
-// Finance ERP Training Simulator — runtime configuration.
+// SAP Finance Training Simulator — runtime configuration.
 //
 // Leave both values empty to run in DEMO mode: the training account is checked
 // in the browser and all data stays in the visitor's own browser storage.

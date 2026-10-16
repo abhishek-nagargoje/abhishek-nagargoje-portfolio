@@ -226,8 +226,8 @@ th{background:#f2f2f2;color:var(--ink);font-weight:400}th,td{border-bottom:1px s
 .mw:last-child .tbm,.tbsub .tbm{left:auto;right:0}
 .tbm button{display:flex;gap:8px;width:100%;text-align:left;padding:7px 14px;border:0;background:none;font-size:13px;color:var(--ink);white-space:pre}.tbm button:hover:not(:disabled){background:#f5f5f5}.tbm button:disabled{color:#a9a9a9;cursor:default}
 .tbm .ck{width:12px;color:var(--blue)}.tbm hr{border:0;border-top:1px solid var(--line2);margin:4px 0}
-.agw{overflow:auto;border:1px solid var(--line2);max-height:calc(100vh - 290px)}
-table.ag{border-collapse:collapse;font-size:13px;width:auto;min-width:100%}
+.agw{overflow:auto;border:1px solid var(--line2);width:fit-content;max-width:100%;max-height:calc(100vh - 290px)}
+table.ag{border-collapse:collapse;font-size:13px;width:auto}
 .ag th{background:#f2f2f2;color:var(--ink);font-weight:400;text-align:left;padding:5px 8px;border:1px solid #e5e5e5;position:sticky;top:0;z-index:1;white-space:nowrap}
 .ag th.n{text-align:right;max-width:150px}.ag th .trunc{display:block;overflow:hidden;text-overflow:ellipsis;max-width:150px}
 .ag th.hsel{background:#d1e8ff}.ag .hb{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer}
@@ -246,6 +246,17 @@ table.ag{border-collapse:collapse;font-size:13px;width:auto;min-width:100%}
 .msgpop .seg{display:inline-flex;border:1px solid var(--blue);border-radius:4px;overflow:hidden}.msgpop .seg b{background:var(--blue);color:#fff;padding:2px 8px;font-weight:400}.msgpop .seg span{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;color:#bb0000}
 .msgpop svg.i{width:14px;height:14px}.msgpop .mi{display:flex;gap:8px;align-items:center;padding:10px;color:var(--ink)}.msgpop .mi svg.i{color:#bb0000}
 @media(max-width:900px){.tbnav{position:fixed;top:47px;bottom:0;left:0;z-index:45;box-shadow:var(--sh)}.tbmainp{padding:12px 12px 60px}.ff{width:100%}.agw{max-height:none}}
+.ag td.cf-g{background:#2b7d2b;color:#fff}.ag td.cf-o{background:#ef8a3d;color:#1d1d1d}.ag td.cf-r{background:#bb0000;color:#fff}
+.ag td.rc{background:#f6cf9f}.ag th.res{background:#f2b77f}.ag th.r{text-align:right}.ag.mh th{position:static}
+.ag .srt{border:0;background:none;color:var(--mut);font-size:10px;margin-left:6px;cursor:pointer;padding:0}
+.ag tr.rsel td.cf-g,.ag tr.rsel td.cf-o,.ag tr.rsel td.cf-r{outline:2px solid #0a6ed1;outline-offset:-2px}
+.chw{border:1px solid var(--line2);padding:8px 12px}.chh{display:flex;align-items:center}
+.chart svg{width:100%;max-width:1000px;height:auto;display:block}.chart text{font-family:inherit;font-size:11px;fill:#6a6d70}
+.chart.anim .bar{animation:tbgrow .7s ease-out both}.chart.anim .barv{animation:tbgrowv .7s ease-out both}.chart.anim .ln{animation:tbfade .7s ease-out both}
+@keyframes tbgrow{from{transform:scaleX(0)}}@keyframes tbgrowv{from{transform:scaleY(0)}}@keyframes tbfade{from{opacity:0}}
+@media(prefers-reduced-motion:reduce){.chart.anim .bar,.chart.anim .barv,.chart.anim .ln{animation:none}}
+.cfr{display:grid;grid-template-columns:1fr 70px 1fr;gap:8px;margin-top:8px}
+.pz{display:grid;grid-template-columns:150px 1fr;gap:10px 12px;align-items:center;margin:8px 0}.pz label{text-align:right;color:var(--mut);font-size:13px}.pz input[type=checkbox]{justify-self:start;width:16px;height:16px}
 </style>
 </head>
 <body>
@@ -1146,66 +1157,101 @@ const TBD={
 const TBM={SB:'Starting Balance in Company Code Currency',DB:'Debit Balance in Company Code Currency',CB:'Credit Balance in Company Code Currency',EB:'Ending Balance in Company Code Currency'};
 const TBF={ledger:'Ledger',cc:'Company Code',from:'Posting Date From',to:'Posting Date To',hier:'Hierarchy ID',atype:'Account Type'};
 const TYPEORD='ALERX';
+const tbClone=o=>JSON.parse(JSON.stringify(o));
+function tbDefaults(){return {rows:['CC','GL'],cols:[],meas:{SB:1,DB:1,CB:1,EB:1},disp:'kt',totals:true,overall:true,sort:'key',filt:{},attr:false,swap:false,collapsed:false,
+  cf:{on:true,m:'EB',rules:[{c:'g',op:'ge',v:30000000},{c:'o',op:'le',v:0},{c:'',op:'le',v:0}]},
+  chart:{type:'bar',finish:'matte',legend:true,tip:true,anim:true}}}
+const tbLayout=()=>{const t=S.tb,o={};for(const k of Object.keys(tbDefaults()))o[k]=tbClone(t[k]);return o};
+const tbViews=()=>(D.tbViews=D.tbViews||[]);
 function tbS(){if(!S.tb){const fb={ledger:['0L'],cc:['1000'],from:'2026-10-01',to:D.keyDate,hier:'',atype:[]};
-  S.tb={fb,applied:JSON.parse(JSON.stringify(fb)),show:{hier:true,atype:false},msgs:[],msgOpen:false,hideFB:false,nav:window.innerWidth>900,tab:'da',rows:['CC','GL'],meas:{SB:1,DB:1,CB:1,EB:1},disp:'kt',totals:true,overall:true,sort:'key',filt:{},menu:null,sub:null,sel:null,selRow:null,attr:false,swap:false,collapsed:false,full:false,dq:'',mexp:true,inv:{}}}
+  S.tb={fb,applied:tbClone(fb),show:{hier:true,atype:false},msgs:[],msgOpen:false,hideFB:false,nav:window.innerWidth>900,tab:'da',...tbDefaults(),menu:null,sub:null,sel:null,selRow:null,full:false,mexp:true,inv:{},view:''}}
   return S.tb}
+const tbDirty=()=>{const t=S.tb,v=t.view&&tbViews().find(x=>x.name===t.view);return JSON.stringify(tbLayout())!==JSON.stringify(v?v.layout:tbDefaults())||(v&&v.vars?JSON.stringify(t.fb)!==JSON.stringify(v.vars):JSON.stringify(t.fb)!==JSON.stringify(t.applied))};
 const tbDims=()=>{const t=S.tb,h=t.applied&&t.applied.hier==='FSV1';let r=t.rows.slice();if(h&&!r.includes('AT'))r=['AT',...r];if(t.collapsed)r=r.slice(0,1);return r};
 const fmtS=c=>(c<0?'₹ -':'₹ ')+fmt(Math.abs(c));
-function tbData(){const t=S.tb,q=t.applied;if(!q)return null;const dims=tbDims(),map=new Map();
-  if(!q.cc.includes('1000'))return {dims,rows:[]};
+const fmtC=c=>{const r=c/100,a=Math.abs(r);return (r<0?'-':'')+(a>=1e7?(a/1e7).toFixed(1)+' Cr':a>=1e5?(a/1e5).toFixed(1)+' L':Math.round(a).toLocaleString('en-IN'))};
+const tbMonths=q=>{const out=[];if(!q||!isDate(q.from)||!isDate(q.to))return out;let p=per(q.from);const e=per(q.to);while(p<=e&&out.length<36){out.push(p);p=nextP(p)}return out};
+const MSH=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],mLab=p=>MSH[+p.slice(5,7)-1]+' '+p.slice(0,4);
+function tbData(){const t=S.tb,q=t.applied;if(!q)return null;const dims=tbDims(),map=new Map(),months=t.cols.includes('CM')?tbMonths(q):[];
+  if(!q.cc.includes('1000'))return {dims,rows:[],months};
   for(const L of q.ledger){if(!LEDGERS[L])continue;for(const j of D.journals){if(!inLedger(j,L)||j.date>q.to)continue;
     for(const l of j.lines){if(q.atype.length&&!q.atype.includes(A(l.acc).type))continue;
       let skip=false;for(const [d,vals] of Object.entries(t.filt))if(vals.length&&!vals.includes(TBD[d].k(l,j,L))){skip=true;break}if(skip)continue;
       const keys=dims.map(d=>TBD[d].k(l,j,L)),id=keys.join('\u0001');let r=map.get(id);
-      if(!r){r={id,keys,texts:dims.map(d=>TBD[d].t(l,j,L)),acc:dims.includes('GL')?l.acc:null,at:A(l.acc).type,SB:0,DB:0,CB:0};map.set(id,r)}
-      if(j.date<q.from)r.SB+=l.dr-l.cr;else{r.DB+=l.dr;r.CB-=l.cr}}}}
-  const rows=[...map.values()].filter(r=>r.SB||r.DB||r.CB).map(r=>({...r,EB:r.SB+r.DB+r.CB}));
+      if(!r){r={id,keys,texts:dims.map(d=>TBD[d].t(l,j,L)),acc:dims.includes('GL')?l.acc:null,at:A(l.acc).type,SB:0,DB:0,CB:0,mon:{}};map.set(id,r)}
+      if(j.date<q.from)r.SB+=l.dr-l.cr;else{r.DB+=l.dr;r.CB-=l.cr;const p=per(j.date),mm=r.mon[p]||(r.mon[p]={DB:0,CB:0});mm.DB+=l.dr;mm.CB-=l.cr}}}}
+  const rows=[...map.values()].filter(r=>r.SB||r.DB||r.CB).map(r=>{const o={...r,EB:r.SB+r.DB+r.CB,m:{}};let run=r.SB;
+    for(const p of months){const mm=r.mon[p]||{DB:0,CB:0};o.m[p]={SB:run,DB:mm.DB,CB:mm.CB,EB:run+mm.DB+mm.CB};run=o.m[p].EB}return o});
   const kc=(a,b,i)=>dims[i]==='AT'?TYPEORD.indexOf(a.keys[i])-TYPEORD.indexOf(b.keys[i]):String(a.keys[i]).localeCompare(String(b.keys[i]),'en',{numeric:true});
   const byKey=(a,b)=>{for(let i=0;i<dims.length;i++){const c=kc(a,b,i);if(c)return c}return 0};
   const gsum=new Map();rows.forEach(r=>gsum.set(r.keys[0],(gsum.get(r.keys[0])||0)+r.EB));
   if(t.sort==='key')rows.sort(byKey);else if(t.sort==='keyd')rows.sort((a,b)=>-byKey(a,b));
   else{const s=t.sort==='ebd'?-1:1;rows.sort((a,b)=>(dims.length>1?s*(gsum.get(a.keys[0])-gsum.get(b.keys[0]))||kc(a,b,0):0)||s*(a.EB-b.EB))}
-  return {dims,rows}}
-const tbAdd=rs=>{const o={SB:0,DB:0,CB:0,EB:0};rs.forEach(r=>{for(const k in o)o[k]+=r[k]});return o};
+  return {dims,rows,months}}
+const tbAdd=(rs,months)=>{const o={SB:0,DB:0,CB:0,EB:0,m:{}};(months||[]).forEach(p=>o.m[p]={SB:0,DB:0,CB:0,EB:0});
+  rs.forEach(r=>{for(const k of ['SB','DB','CB','EB'])o[k]+=r[k];for(const p in o.m)for(const k in o.m[p])o.m[p][k]+=r.m[p][k]});return o};
 const tbMs=()=>Object.keys(TBM).filter(k=>S.tb.meas[k]);
-function tbDimCells(d,key,text,span,isFirstCols){const t=S.tb,rs=span>1?` rowspan="${span}"`:'';
+const tbCf=(m,v)=>{const c=S.tb.cf;if(!c.on||c.m!==m)return '';for(const r of c.rules){if(!r.c)continue;if(r.op==='ge'?v>=r.v:v<=r.v)return ' cf-'+r.c}return ''};
+function tbVals(o,ms,months,data){if(!months.length)return ms.map(m=>`<td class="m${data?tbCf(m,o[m]):''}">${fmtS(o[m])}</td>`).join('');
+  return ms.map(m=>months.map(p=>`<td class="m${data?tbCf(m,o.m[p][m]):''}">${fmtS(o.m[p][m])}</td>`).join('')+`<td class="m rc">${fmtS(o[m])}</td>`).join('')}
+function tbDimCells(d,key,text,span){const t=S.tb,rs=span>1?` rowspan="${span}"`:'';
   if(t.disp==='k')return `<td class="dim"${rs}>${esc(key)}</td>`;if(t.disp==='t')return `<td class="dim"${rs}>${esc(text)}</td>`;
   return `<td class="dim"${rs}>${esc(key)}</td><td class="dim tx"${rs}>${esc(text)}</td>`}
 const tbDimW=()=>S.tb.disp==='kt'?2:1;
-function tbGrid(data){const t=S.tb,{dims,rows}=data,ms=tbMs();
+function tbGrid(data){const t=S.tb,{dims,rows,months}=data,ms=tbMs();
   if(!rows.length)return `<div class="nodata">${ic('info')} No data available</div>`;
   if(!ms.length)return `<div class="nodata">${ic('info')} Select at least one measure (Measures menu or Navigation Panel).</div>`;
-  if(t.swap){const cols=rows.slice(0,60);
+  if(t.swap&&!months.length){const cols=rows.slice(0,60);
     return `<div class="agw"><table class="ag"><thead><tr><th>Measures</th>${cols.map(r=>`<th class="n" title="${esc(r.texts.join(' / '))}">${esc(r.keys.join(' / '))}<br><span class="tx">${esc(r.texts.join(' / '))}</span></th>`).join('')}${t.overall?'<th class="n">Overall Result</th>':''}</tr></thead>
-    <tbody>${ms.map(m=>`<tr><td class="dim">${TBM[m]}</td>${cols.map(r=>`<td class="m">${fmtS(r[m])}</td>`).join('')}${t.overall?`<td class="m res">${fmtS(tbAdd(rows)[m])}</td>`:''}</tr>`).join('')}</tbody></table></div>${rows.length>60?`<p class="note">Showing the first 60 of ${rows.length} columns.</p>`:''}`}
-  const res=t.totals&&dims.length>1,w=tbDimW(),attr=t.attr&&dims.includes('GL');
-  const head=`<tr>${dims.map(d=>`<th colspan="${w}" class="${t.sel===d?'hsel':''}"><button class="hb" data-a="tbsel" data-d="${d}" title="Select ${TBD[d].n} for drilldown actions">${TBD[d].n}</button></th>${attr&&d==='GL'?'<th>Account Type</th>':''}`).join('')}${ms.map(m=>`<th class="n" title="${TBM[m]}"><span class="trunc">${TBM[m].replace(' in Company Code Currency',' in Co…')}</span></th>`).join('')}</tr>`;
+    <tbody>${ms.map(m=>`<tr><td class="dim">${TBM[m]}</td>${cols.map(r=>`<td class="m${tbCf(m,r[m])}">${fmtS(r[m])}</td>`).join('')}${t.overall?`<td class="m res">${fmtS(tbAdd(rows)[m])}</td>`:''}</tr>`).join('')}</tbody></table></div>${rows.length>60?`<p class="note">Showing the first 60 of ${rows.length} columns.</p>`:''}`}
+  const res=t.totals&&dims.length>1,w=tbDimW(),attr=t.attr&&dims.includes('GL'),dimCols=dims.length*w+(attr?1:0);
+  const dimHead=dims.map(d=>`<th colspan="${w}" class="${t.sel===d?'hsel':''}"><button class="hb" data-a="tbsel" data-d="${d}" title="Select ${TBD[d].n} for drilldown actions">${TBD[d].n}</button><button class="srt" data-a="tbsortk" aria-label="Sort by ${TBD[d].n}" title="Sort">${t.sort==='keyd'?'▼':'▲'}</button></th>${attr&&d==='GL'?'<th>Account Type</th>':''}`).join('');
+  const head=months.length
+    ?`<tr><th colspan="${dimCols}" class="r">Measures</th>${ms.map(m=>`<th colspan="${months.length+1}">${TBM[m]}</th>`).join('')}</tr>
+      <tr><th colspan="${dimCols}" class="r">Calendar Month <button class="srt" data-a="tbrmcol" aria-label="Remove Calendar Month from columns" title="Remove from columns">✕</button></th>${ms.map(()=>months.map(p=>`<th>${mLab(p)}</th>`).join('')+'<th class="res">Result</th>').join('')}</tr>
+      <tr>${dimHead}${ms.map(()=>'<th></th>'.repeat(months.length+1)).join('')}</tr>`
+    :`<tr>${dimHead}${ms.map(m=>`<th class="n" title="${TBM[m]}"><span class="trunc">${TBM[m].replace(' in Company Code Currency',' in Co…')}</span></th>`).join('')}</tr>`;
   const out=[];
   const runLen=(i,lv)=>{let n=1;while(i+n<rows.length&&rows[i+n].keys.slice(0,lv+1).join('\u0001')===rows[i].keys.slice(0,lv+1).join('\u0001'))n++;return n};
   rows.forEach((r,i)=>{let cells='';
     dims.forEach((d,lv)=>{const isStart=i===0||rows[i-1].keys.slice(0,lv+1).join('\u0001')!==r.keys.slice(0,lv+1).join('\u0001');
       if(lv<dims.length-1){if(isStart){const n=runLen(i,lv);cells+=tbDimCells(d,r.keys[lv],r.texts[lv],n+(lv===0&&res?1:0))}}else cells+=tbDimCells(d,r.keys[lv],r.texts[lv],1);
       if(attr&&d==='GL')cells+=`<td class="dim tx">${esc(TYPEN[r.at])}</td>`});
-    out.push(`<tr class="${t.selRow===r.id?'rsel':''}" data-a="tbrow" data-id="${esc(r.id)}">${cells}${ms.map(m=>`<td class="m${r[m]<0?' ng':''}">${fmtS(r[m])}</td>`).join('')}</tr>`);
+    out.push(`<tr class="${t.selRow===r.id?'rsel':''}" data-a="tbrow" data-id="${esc(r.id)}">${cells}${tbVals(r,ms,months,true)}</tr>`);
     const last=i===rows.length-1||rows[i+1].keys[0]!==r.keys[0];
-    if(res&&last){const g=tbAdd(rows.filter(x=>x.keys[0]===r.keys[0]));const span=(dims.length-1)*w+(attr&&dims.indexOf('GL')>0?1:0);
-      out.push(`<tr class="res"><td class="rl" colspan="${span}">Result</td>${ms.map(m=>`<td class="m">${fmtS(g[m])}</td>`).join('')}</tr>`)}});
-  if(t.overall){const g=tbAdd(rows);out.push(`<tr class="res ovr"><td class="rl" colspan="${dims.length*w+(attr?1:0)}">Overall Result</td>${ms.map(m=>`<td class="m">${fmtS(g[m])}</td>`).join('')}</tr>`)}
-  return `<div class="agw"><table class="ag"><thead>${head}</thead><tbody>${out.join('')}</tbody></table></div>`}
-function tbChart(data){const {dims,rows}=data;if(!rows.length)return `<div class="nodata">${ic('info')} No data available</div>`;
-  const d0=dims[0],g=new Map();rows.forEach(r=>{const k=r.keys[0];const o=g.get(k)||{k,t:r.texts[0],v:0};o.v+=r.EB;g.set(k,o)});
-  const list=[...g.values()].slice(0,40),max=Math.max(1,...list.map(x=>Math.abs(x.v)));
-  return `<div class="sec" style="border-radius:4px"><h2>Ending Balance by ${TBD[d0].n}</h2><div class="pad">${list.map(x=>`<div class="hb2"><span class="l" title="${esc(x.k+' '+x.t)}">${esc(x.k)} ${esc(x.t)}</span><span class="tr"><span style="width:${Math.abs(x.v)/max*100}%;background:${x.v<0?'#bb0000':'#5899da'}"></span></span><span class="v">${fmtS(x.v)}</span></div>`).join('')}</div></div>`}
+    if(res&&last){const g=tbAdd(rows.filter(x=>x.keys[0]===r.keys[0]),months);const span=(dims.length-1)*w+(attr&&dims.indexOf('GL')>0?1:0);
+      out.push(`<tr class="res"><td class="rl" colspan="${span}">Result</td>${tbVals(g,ms,months,false)}</tr>`)}});
+  if(t.overall)out.push(`<tr class="res ovr"><td class="rl" colspan="${dimCols}">Overall Result</td>${tbVals(tbAdd(rows,months),ms,months,false)}</tr>`);
+  return `<div class="agw"><table class="ag${months.length?' mh':''}"><thead>${head}</thead><tbody>${out.join('')}</tbody></table></div>`}
+function tbChart(data){const t=S.tb,c=t.chart,{dims,rows}=data;if(!rows.length)return `<div class="nodata">${ic('info')} No data available</div>`;
+  const m=t.meas.EB?'EB':(tbMs()[0]||'EB'),g=new Map();rows.forEach(r=>{const k=r.keys[0];const o=g.get(k)||{k,t:r.texts[0],v:0};o.v+=r[m];g.set(k,o)});
+  const L=[...g.values()].slice(0,30),n=L.length,lo=Math.min(0,...L.map(x=>x.v)),hi=Math.max(0,...L.map(x=>x.v)),span=(hi-lo)||1;
+  const ticks=[];for(let i=0;i<=6;i++)ticks.push(lo+span*i/6);
+  const fill=c.finish==='glossy'?'url(#tbgl)':'#5b738b',over=c.finish==='glossy';
+  const tip=x=>c.tip?`<title>${esc(x.k+' '+x.t)}: ${fmtS(x.v)}</title>`:'';
+  const defs=`<defs><linearGradient id="tbgl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8aa0b6"/><stop offset=".5" stop-color="#5b738b"/><stop offset="1" stop-color="#3d5468"/></linearGradient></defs>`;
+  const leg=c.legend?`<rect x="660" y="6" width="10" height="10" fill="#5b738b"/><text x="676" y="15">${TBM[m]}</text>`:'';
+  let svg;
+  if(c.type==='bar'){const W=900,x0=160,x1=880,top=28,rh=34,H=top+n*rh+30,X=v=>x0+(v-lo)/span*(x1-x0),Z=X(0);
+    svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${TBM[m]} by ${TBD[dims[0]].n}">${defs}${leg}${ticks.map(v=>`<line x1="${X(v)}" x2="${X(v)}" y1="${top-4}" y2="${H-26}" stroke="#e5e5e5"/><text x="${X(v)}" y="${H-10}" text-anchor="middle">${fmtC(v)}</text>`).join('')}
+      ${L.map((x,i)=>{const y=top+i*rh+5,a=X(x.v);return `<text x="${x0-8}" y="${y+16}" text-anchor="end">${esc(String(x.k).slice(0,18))}</text><rect class="bar" style="transform-origin:${Z}px 0" x="${Math.min(a,Z)}" y="${y}" width="${Math.max(1,Math.abs(a-Z))}" height="${rh-12}" fill="${fill}">${tip(x)}</rect>`}).join('')}<line x1="${Z}" x2="${Z}" y1="${top-4}" y2="${H-26}" stroke="#89919a"/></svg>`}
+  else{const W=900,x0=90,x1=880,top=28,bot=300,cw=(x1-x0)/n,Y=v=>bot-(v-lo)/span*(bot-top),Z=Y(0),H=bot+56;
+    const grid=ticks.map(v=>`<line x1="${x0}" x2="${x1}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e5e5e5"/><text x="${x0-6}" y="${Y(v)+4}" text-anchor="end">${fmtC(v)}</text>`).join('');
+    const labs=L.map((x,i)=>`<text x="${x0+cw*i+cw/2}" y="${bot+18}" text-anchor="middle">${esc(String(x.k).slice(0,10))}</text>`).join('');
+    const body=c.type==='column'?L.map((x,i)=>{const b=Y(x.v);return `<rect class="barv" style="transform-origin:0 ${Z}px" x="${x0+cw*i+cw*.2}" y="${Math.min(b,Z)}" width="${cw*.6}" height="${Math.max(1,Math.abs(b-Z))}" fill="${fill}">${tip(x)}</rect>`}).join('')
+      :`<polyline class="ln" fill="none" stroke="#5b738b" stroke-width="2.5" points="${L.map((x,i)=>`${x0+cw*i+cw/2},${Y(x.v)}`).join(' ')}"/>`+L.map((x,i)=>`<circle class="ln" cx="${x0+cw*i+cw/2}" cy="${Y(x.v)}" r="4.5" fill="#5b738b">${tip(x)}</circle>`).join('');
+    svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${TBM[m]} by ${TBD[dims[0]].n}">${defs}${leg}${grid}<line x1="${x0}" x2="${x1}" y1="${Z}" y2="${Z}" stroke="#89919a"/>${body}${labs}</svg>`}
+  return `<div class="chw"><div class="chh"><span class="note" style="margin:0">${TBM[m]} by ${TBD[dims[0]].n}${g.size>30?' (first 30)':''}</span><span style="flex:1"></span><button class="ib3" data-a="tbpers" aria-label="Chart personalization" title="Personalization">${ic('gear')}</button></div><div class="chart${c.anim?' anim':''}">${svg}</div></div>`}
 function tbInfo(){const t=S.tb,q=t.applied,f=v=>v&&v.length?esc(Array.isArray(v)?v.join(', '):v):'—';
   const rows=[['Query','Trial Balance'],['Technical name','ZFIN_TRIAL_BALANCE_Q01'],['Data source','Posted journal entries (this browser)'],['Last data update',stamp()],
     ['Variable: Ledger',f(q?.ledger)],['Variable: Company Code',f(q?.cc)],['Variable: Posting Date From',f(q?.from)],['Variable: Posting Date To',f(q?.to)],['Variable: Hierarchy ID',f(q?.hier)],
-    ['Rows',tbDims().map(d=>TBD[d].n).join(', ')],['Columns',tbMs().map(m=>TBM[m]).join(', ')],['Filters',Object.entries(t.filt).filter(([,v])=>v.length).map(([d,v])=>`${TBD[d].n} = ${v.join(', ')}`).join('; ')||'None']];
+    ['Rows',tbDims().map(d=>TBD[d].n).join(', ')],['Columns',tbMs().map(m=>TBM[m]).join(', ')+(t.cols.includes('CM')?' × Calendar Month':'')],['Saved view (bookmark)',esc(t.view||'Standard')],['Conditional formatting',t.cf.on?`${TBM[t.cf.m]}: `+t.cf.rules.filter(r=>r.c).map(r=>`${{g:'green',o:'orange',r:'red'}[r.c]} if ${r.op==='ge'?'≥':'≤'} ${fmtS(r.v)}`).join('; '):'Off'],['Filters',Object.entries(t.filt).filter(([,v])=>v.length).map(([d,v])=>`${TBD[d].n} = ${v.join(', ')}`).join('; ')||'None']];
   return `<div class="sec" style="border-radius:4px">${tbl(['Property','Value'],rows.map(r=>[esc(r[0]),r[1]]))}</div>`}
 function tbTok(f){const t=S.tb,v=t.fb[f],inv=t.inv[f];
   return `<div class="tokf${inv?' inv':''}">${v.map(x=>`<span class="tok">${esc(x)}<button data-a="tbrmtok" data-f="${f}" data-v="${esc(x)}" aria-label="Remove ${esc(x)}">${ic('x')}</button></span>`).join('')}<input data-tbtok="${f}" id="tbf-${f}" aria-label="${TBF[f]}" autocomplete="off"></div>`}
 function tbFilterBar(){const t=S.tb,fb=t.fb,req=f=>`<span class="rq">*</span> `,inv=f=>t.inv[f]?' inv':'';
   const filled=['ledger','cc','from','to','hier','atype'].filter(f=>(f!=='hier'||t.show.hier)&&(f!=='atype'||t.show.atype)&&(Array.isArray(fb[f])?fb[f].length:fb[f])).length;
-  const vrow=`<div class="fbtop"><button class="vm" data-a="tbvariant">Standard${JSON.stringify(fb)!==JSON.stringify(t.applied)||t.rows.join()!=='CC,GL'?' *':''} ${ic('down')}</button><span style="flex:1"></span>
+  const vrow=`<div class="fbtop"><span class="mw"><button class="vm" data-a="tbmenu" data-m="var" aria-haspopup="menu" aria-expanded="${t.menu==='var'}">${esc(t.view||'Standard')}${tbDirty()?' *':''} ${ic('down')}</button>${tbMenu('var',[['Standard','tbview',{v:''},false,t.view?2:1],...tbViews().map(v=>[v.name+(v.shared?' (shared)':''),'tbview',{v:v.name},false,t.view===v.name?1:2]),'-',['Save As…','tbbm'],['Manage Views…','tbmanage',null,!tbViews().length]])}</span><span style="flex:1"></span>
     <button class="lk" data-a="tbhidefb">${t.hideFB?'Show Filter Bar':'Hide Filter Bar'}</button><button class="lk" data-a="tbadapt">Adapt Filters (${filled})</button><button class="gob" data-a="tbgo">Go</button></div>`;
   if(t.hideFB)return `<div class="fb">${vrow}</div>`;
   const fld=(f,body,r)=>`<div class="ff"><label for="tbf-${f}">${r?req(f):''}${TBF[f]}:</label><div class="fw">${body}</div></div>`;
@@ -1223,14 +1269,14 @@ const tbBtn=(name,label,icon,items,cls)=>`<span class="mw"><button class="tbb${c
 function tbToolbar(){const t=S.tb,dims=tbDims(),avail=Object.keys(TBD).filter(d=>!dims.includes(d)),sel=t.sel&&dims.includes(t.sel)?t.sel:dims[dims.length-1];
   const sub=t.sub;
   const drill=[[`Remove Drilldown${sel?` (${TBD[sel].n})`:''}`,'tbrm',{d:sel},dims.length<=1],[`Exchange with${sub==='ex'?' ▾':' ›'}`,'tbsub',{s:'ex'},!avail.length],
-    ...(sub==='ex'?avail.map(d=>[`   ${TBD[d].n}`,'tbex',{d,o:sel}]):[]),[`Add Drilldown${sub==='add'?' ▾':' ›'}`,'tbsub',{s:'add'},!avail.length],...(sub==='add'?avail.map(d=>[`   ${TBD[d].n}`,'tbadd',{d}]):[]),
-    ['Swap Axis','tbswap',null,false,t.swap?1:2],['Add Attribute','tbattr',{v:1},!dims.includes('GL')||t.attr],['Remove Attribute','tbattr',{v:0},!t.attr]];
-  return `<div class="tbt"><span class="mw"><button class="lk qv" data-a="tbmenu" data-m="qv">&lt;Standard Query View&gt; ${ic('down')}</button>${tbMenu('qv',[['Standard Query View','tbreset'],['Reset navigation','tbreset']])}</span><span class="sepv"></span>
+    ...(sub==='ex'?avail.map(d=>[`   ${TBD[d].n}`,'tbex',{d,o:sel}]):[]),[`Add Drilldown${sub==='add'?' ▾':' ›'}`,'tbsub',{s:'add'}],...(sub==='add'?[...avail.map(d=>[`   ${TBD[d].n}`,'tbadd',{d}]),...(t.cols.includes('CM')?[]:[['   Calendar Month (Columns)','tbaddcol']])]:[]),...(t.cols.includes('CM')?[['Remove Calendar Month from Columns','tbrmcol']]:[]),
+    ['Swap Axis','tbswap',null,t.cols.includes('CM'),t.swap?1:2],['Add Attribute','tbattr',{v:1},!dims.includes('GL')||t.attr],['Remove Attribute','tbattr',{v:0},!t.attr]];
+  return `<div class="tbt"><span class="mw"><button class="lk qv" data-a="tbmenu" data-m="qv">&lt;Standard Query View&gt; ${ic('down')}</button>${tbMenu('qv',[['Save Bookmark As…','tbbm'],['Reset to Standard Query View','tbreset']])}</span><span class="sepv"></span>
    ${tbBtn('filter','Filter','filt',[...dims.map(d=>[`Filter ${TBD[d].n}…`,'tbfilt',{d}]),'-',['Remove All Filters','tbclrf',null,!Object.values(t.filt).some(v=>v.length)]])}
    ${tbBtn('sort','Sort','',[['Ascending by Key','tbsort',{v:'key'},false,t.sort==='key'?1:2],['Descending by Key','tbsort',{v:'keyd'},false,t.sort==='keyd'?1:2],['Ending Balance – Largest First','tbsort',{v:'ebd'},false,t.sort==='ebd'?1:2],['Ending Balance – Smallest First','tbsort',{v:'eba'},false,t.sort==='eba'?1:2]])}
    ${tbBtn('hier','Hierarchy','',[['Financial Statement Hierarchy (FSV1)','tbhier',null,false,t.applied?.hier==='FSV1'?1:2],'-',['Expand All','tbcol',{v:0},!(dims.length>1||t.collapsed)],['Collapse to First Level','tbcol',{v:1},t.collapsed]])}
    ${tbBtn('drill','Drilldown','',drill)}
-   ${tbBtn('disp','Display','',[['Key and Text','tbdisp',{v:'kt'},false,t.disp==='kt'?1:2],['Text','tbdisp',{v:'t'},false,t.disp==='t'?1:2],['Key','tbdisp',{v:'k'},false,t.disp==='k'?1:2]])}
+   ${tbBtn('disp','Display','',[['Key and Text','tbdisp',{v:'kt'},false,t.disp==='kt'?1:2],['Text','tbdisp',{v:'t'},false,t.disp==='t'?1:2],['Key','tbdisp',{v:'k'},false,t.disp==='k'?1:2],'-',['Conditional Formatting…','tbcf'],[t.cf.on?'Hide Conditional Formatting':'Show Conditional Formatting','tbcftog']])}
    ${tbBtn('meas','Measures','',Object.keys(TBM).map(m=>[TBM[m],'tbmeas',{m},false,t.meas[m]?1:2]))}
    ${tbBtn('tot','Totals','',[['Show Results Rows','tbtot',{v:'res'},false,t.totals?1:2],['Show Overall Result','tbtot',{v:'ovr'},false,t.overall?1:2]])}
    <span style="flex:1"></span>
@@ -1241,16 +1287,16 @@ function tbNav(){const t=S.tb,dims=tbDims(),q=(S.tbdq||'').toLowerCase(),m=d=>!q
   return `<aside class="tbnav" aria-label="Navigation Panel"><h2>Navigation Panel</h2><div class="dimbox"><div class="dh"><h3>Dimensions</h3></div>
    <div class="dsr"><input data-q="tbdq" id="tbdq" placeholder="Search Dimensions" aria-label="Search Dimensions" value="${esc(S.tbdq||'')}">${ic('search2')}</div>
    <h4>Rows</h4>${dims.filter(m).map((d,i)=>it(d,`${i?`<button data-a="tbup" data-d="${d}" title="Move up" aria-label="Move ${TBD[d].n} up">${ic('up')}</button>`:''}<button data-a="tbfilt" data-d="${d}" title="Filter" aria-label="Filter ${TBD[d].n}">${ic('filt')}</button>${dims.length>1?`<button data-a="tbrm" data-d="${d}" title="Remove from rows" aria-label="Remove ${TBD[d].n}">${ic('x')}</button>`:''}`)).join('')}
-   <h4>Columns</h4><div class="tbi"><span class="i2"></span><span class="i3 c"></span><button class="nm lnk" data-a="tbmexp">${t.mexp?'⌄':'›'} Measures</button></div>
+   <h4>Columns</h4><div class="tbi"><span class="i2"></span><span class="i3 c"></span><button class="nm lnk" data-a="tbmexp">${t.mexp?'⌄':'›'} Measures</button></div>${t.cols.includes('CM')?`<div class="tbi"><span class="i2"></span><span class="i3"></span><span class="nm">Calendar Month</span><span class="ia"><button data-a="tbrmcol" title="Remove from columns" aria-label="Remove Calendar Month from columns">${ic('x')}</button></span></div>`:''}
    ${t.mexp?Object.keys(TBM).map(k=>`<label class="tbi sub"><input type="checkbox" data-a="tbmeas" data-m="${k}" ${t.meas[k]?'checked':''}> ${TBM[k].replace(' in Company Code Currency','')}</label>`).join(''):''}
-   <h4>Available Fields</h4>${avail.map(d=>it(d,`<button data-a="tbadd" data-d="${d}" title="Add to rows" aria-label="Add ${TBD[d].n} to rows">${ic('plus')}</button>`)).join('')||'<p class="note" style="padding:0 6px">No further fields.</p>'}
+   <h4>Available Fields</h4>${!t.cols.includes('CM')&&(!q||'calendar month'.includes(q))?`<div class="tbi"><span class="i2"></span><span class="i3"></span><span class="nm">Calendar Month</span><span class="ia"><button data-a="tbaddcol" title="Add to columns" aria-label="Add Calendar Month to columns">${ic('next')}</button></span></div>`:''}${avail.map(d=>it(d,`<button data-a="tbadd" data-d="${d}" title="Add to rows" aria-label="Add ${TBD[d].n} to rows">${ic('plus')}</button>`)).join('')}
    </div></aside>`}
 function tbView(){const t=tbS(),data=tbData();
   const content=!data?`<div class="nodata">${ic('info')} No data available</div>`:t.tab==='da'?tbGrid(data):t.tab==='gd'?tbChart(data):tbInfo();
   const errs=t.msgs.length;
   return `<div class="tbsub"><button class="npb" data-a="tbnp" aria-pressed="${t.nav&&!t.full}">Navigation Panel</button><span style="flex:1"></span>
     <span class="mw"><button class="ib2" data-a="tbmenu" data-m="set" aria-label="Settings">${ic('gear')}${ic('down')}</button>${tbMenu('set',[[t.nav?'Hide Navigation Panel':'Show Navigation Panel','tbnp'],[t.hideFB?'Show Filter Bar':'Hide Filter Bar','tbhidefb'],[t.full?'Exit Full Screen':'Full Screen','tbfull']])}</span>
-    <span class="mw"><button class="ib2" data-a="tbmenu" data-m="shr" aria-label="Share">${ic('share')}${ic('down')}</button>${tbMenu('shr',[['Export to Spreadsheet (CSV)','tbcsv'],['Copy Query Summary','tbcopy']])}</span>
+    <span class="mw"><button class="ib2" data-a="tbmenu" data-m="shr" aria-label="Share">${ic('share')}${ic('down')}</button>${tbMenu('shr',[['Save as Bookmark…','tbbm'],['Export to Spreadsheet (CSV)','tbcsv'],['Copy Query Summary','tbcopy']])}</span>
     <span class="mw"><button class="ib2" data-a="tbhelp" aria-label="Help">${ic('help')}${ic('down')}</button></span></div>
   <div class="tbwrap">${t.nav&&!t.full?tbNav():''}<div class="tbmainp">${t.full?'':tbFilterBar()}
    <div class="tbtabs" role="tablist"><button class="tg" data-a="tbfull" aria-label="${t.full?'Show':'Hide'} header">${ic(t.full?'chev':'down')}</button>${[['da','Data Analysis'],['gd','Graphical Display'],['qi','Query Information']].map(([k,l])=>`<button role="tab" data-a="tbtab" data-k="${k}" aria-selected="${t.tab===k}">${l}</button>`).join('')}<span style="flex:1"></span><button class="ib3" data-a="tbfull" aria-label="Full screen" title="${t.full?'Exit full screen':'Full screen'}">${ic('full')}</button></div>
@@ -1269,7 +1315,7 @@ function tbAddTok(f,raw){const t=S.tb,v=String(raw||'').trim().toUpperCase();if(
   if(f==='cc'&&!/^[A-Z0-9]{1,4}$/.test(v)){t.msgs=['A company code has at most 4 letters or digits'];t.inv.cc=1;t.msgOpen=true;return}
   if(!t.fb[f].includes(v))t.fb[f].push(v);delete t.inv[f]}
 function tbCSV(){const data=tbData();if(!data||!data.rows.length)throw Error('There is no data to export.');const ms=tbMs(),q=s=>`"${String(s).replace(/"/g,'""')}"`;
-  const lines=[[...data.dims.flatMap(d=>[TBD[d].n,TBD[d].n+' (text)']),...ms.map(m=>TBM[m])].map(q).join(','),...data.rows.map(r=>[...r.keys.flatMap((k,i)=>[k,r.texts[i]]),...ms.map(m=>(r[m]/100).toFixed(2))].map(q).join(','))];
+  const mo=data.months;const lines=[[...data.dims.flatMap(d=>[TBD[d].n,TBD[d].n+' (text)']),...ms.flatMap(m=>[...mo.map(p=>`${TBM[m]} ${mLab(p)}`),TBM[m]])].map(q).join(','),...data.rows.map(r=>[...r.keys.flatMap((k,i)=>[k,r.texts[i]]),...ms.flatMap(m=>[...mo.map(p=>(r.m[p][m]/100).toFixed(2)),(r[m]/100).toFixed(2)])].map(q).join(','))];
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv'}));a.download=`trial-balance-${S.tb.applied.from}-${S.tb.applied.to}.csv`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('Export downloaded')}
 function tbAct(el){const t=tbS(),a=el.dataset.a,d=el.dataset.d,keep=['tbmenu','tbsub'];
   if(!keep.includes(a)){t.menu=null;t.sub=null}
@@ -1289,7 +1335,38 @@ function tbAct(el){const t=tbS(),a=el.dataset.a,d=el.dataset.d,keep=['tbmenu','t
    case'tbadapt':dlg(`<form id="tbaf"><h2>Adapt Filters</h2><p class="note" style="margin-top:0">Mandatory filters are always shown.</p>${Object.keys(TBF).map(f=>{const mand=['ledger','cc','from','to'].includes(f);return `<label style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line2)"><input type="checkbox" name="${f}" ${mand||t.show[f]?'checked':''} ${mand?'disabled':''}><span>${TBF[f]}${mand?' (mandatory)':''}</span></label>`}).join('')}<div class="ft"><button type="button" class="btn g" data-a="close">Cancel</button><button type="button" class="btn p" data-a="tbadaptok">OK</button></div></form>`);return;
    case'tbadaptok':{['hier','atype'].forEach(f=>{t.show[f]=$(`#tbaf input[name=${f}]`).checked;if(!t.show[f])t.fb[f]=f==='atype'?[]:''});closeDlg();break}
    case'tbvariant':dlg(`<div class="dlgb"><h2>My Views</h2><label style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line2)"><input type="radio" checked> <span>Standard (default)</span></label><p class="note">Choosing Standard restores the default filters and drilldown.</p><div class="ft"><button class="btn g" data-a="close">Cancel</button><button class="btn p" data-a="tbreset">Apply Standard</button></div></div>`);return;
-   case'tbreset':{delete S.tb;tbS();closeDlg();toast('Standard view restored');break}
+   case'tbreset':{Object.assign(t,tbDefaults());t.view='';closeDlg();toast('Standard view restored');break}
+   case'tbaddcol':if(!t.cols.includes('CM')){t.cols=['CM'];t.swap=false}break;
+   case'tbrmcol':t.cols=[];break;
+   case'tbsortk':t.sort=t.sort==='key'?'keyd':'key';break;
+   case'tbcftog':t.cf.on=!t.cf.on;break;
+   case'tbcf':{const c=t.cf,col=[['','—'],['g','Green'],['o','Orange'],['r','Red']];
+     dlg(`<form id="tbcff"><h2>Conditional Formatting</h2><label style="display:flex;gap:10px;align-items:center;margin-bottom:6px"><input type="checkbox" id="cfon" ${c.on?'checked':''}> Active</label>
+      <label class="fl" for="cfm">Measure</label><select class="inp w" id="cfm">${Object.keys(TBM).map(k=>`<option value="${k}" ${c.m===k?'selected':''}>${TBM[k]}</option>`).join('')}</select>
+      <p class="note">Rules are checked from top to bottom; the first matching rule colours the cell. Amounts in ₹ (negative = credit).</p>
+      ${c.rules.map((r,i)=>`<div class="cfr"><select class="inp" id="cfc${i}" aria-label="Rule ${i+1} colour">${col.map(([k,l])=>`<option value="${k}" ${r.c===k?'selected':''}>${l}</option>`).join('')}</select><select class="inp" id="cfo${i}" aria-label="Rule ${i+1} operator"><option value="ge" ${r.op==='ge'?'selected':''}>≥</option><option value="le" ${r.op==='le'?'selected':''}>≤</option></select><input class="inp" id="cfv${i}" inputmode="decimal" aria-label="Rule ${i+1} value" value="${(r.v/100).toFixed(2)}"></div>`).join('')}
+      <div class="err" id="cfe" role="alert"></div><div class="ft"><button type="button" class="btn g" data-a="close">Cancel</button><button type="button" class="btn p" data-a="tbcfok">OK</button></div></form>`);return}
+   case'tbcfok':{const rules=[0,1,2].map(i=>{const raw=$('#cfv'+i).value.trim();return {c:$('#cfc'+i).value,op:$('#cfo'+i).value,v:cents(raw),ok:/^-?[\d,]+(\.\d{1,2})?$/.test(raw)}});
+     const bad=rules.findIndex(r=>r.c&&!r.ok);if(bad>=0){$('#cfe').textContent=`Rule ${bad+1}: enter a valid amount.`;return}
+     t.cf={on:$('#cfon').checked,m:$('#cfm').value,rules:rules.map(({c,op,v})=>({c,op,v}))};closeDlg();toast('Conditional formatting updated');break}
+   case'tbpers':{const c=t.chart;dlg(`<form id="tbpf"><div class="dhd"><h2>Personalization</h2></div><div class="pz">
+      <label for="pzt">Chart Type:</label><select class="inp" id="pzt">${[['bar','Bar'],['column','Column'],['line','Line']].map(([k,l])=>`<option value="${k}" ${c.type===k?'selected':''}>${l}</option>`).join('')}</select>
+      <label for="pzf">Drawing Finish:</label><select class="inp" id="pzf">${[['matte','Matte'],['glossy','Glossy']].map(([k,l])=>`<option value="${k}" ${c.finish===k?'selected':''}>${l}</option>`).join('')}</select>
+      <label for="pzl">Show Legend:</label><input type="checkbox" id="pzl" ${c.legend?'checked':''}><label for="pztt">Show Tooltip:</label><input type="checkbox" id="pztt" ${c.tip?'checked':''}><label for="pza">Show Animation:</label><input type="checkbox" id="pza" ${c.anim?'checked':''}></div>
+      <div class="ft"><button type="button" class="btn p" data-a="tbpersok">Save</button><button type="button" class="btn" data-a="tbpersreset">Reset to Default</button><button type="button" class="btn g" data-a="close">Cancel</button></div></form>`);return}
+   case'tbpersok':t.chart={type:$('#pzt').value,finish:$('#pzf').value,legend:$('#pzl').checked,tip:$('#pztt').checked,anim:$('#pza').checked};closeDlg();toast('Chart settings saved');break;
+   case'tbpersreset':t.chart=tbDefaults().chart;closeDlg();toast('Chart settings reset to default');break;
+   case'tbbm':dlg(`<form id="tbbf"><h2>Save Bookmark As</h2><div class="pz"><label for="bmn">Bookmark Name:</label><input class="inp" id="bmn" maxlength="30" placeholder="New Bookmark Name" value="${esc(t.view)}" autocomplete="off">
+      <label for="bmv">With variable values:</label><input type="checkbox" id="bmv" checked><label for="bms">Shared:</label><input type="checkbox" id="bms"></div><div class="err" id="bme" role="alert"></div>
+      <div class="ft"><button type="button" class="btn p" data-a="tbbmok">Save</button><button type="button" class="btn g" data-a="close">Cancel</button></div></form>`);return;
+   case'tbbmok':{const name=$('#bmn').value.trim();if(!name){$('#bme').textContent='Enter a bookmark name.';$('#bmn').focus();return}if(/^standard$/i.test(name)){$('#bme').textContent='“Standard” is reserved – choose another name.';return}
+     const vs=tbViews(),ex=vs.find(v=>v.name.toLowerCase()===name.toLowerCase());if(ex&&!confirm(`A bookmark named “${ex.name}” exists. Overwrite it?`))return;
+     const v={name:ex?ex.name:name,vars:$('#bmv').checked?tbClone(t.fb):null,shared:$('#bms').checked,layout:tbLayout(),by:S.user.name,t:stamp()};
+     if(ex)Object.assign(ex,v);else vs.push(v);t.view=v.name;audit('Saved trial balance bookmark',v.name);closeDlg();toast(`Bookmark “${v.name}” saved`);break}
+   case'tbview':{const n=el.dataset.v;if(!n){Object.assign(t,tbDefaults());t.view='';toast('Standard view');break}const v=tbViews().find(x=>x.name===n);if(!v)throw Error('Bookmark not found.');
+     Object.assign(t,tbClone(v.layout));if(v.vars){t.fb=tbClone(v.vars);t.applied=tbClone(v.vars);t.msgs=[];t.inv={}}t.view=v.name;t.selRow=null;toast(`Bookmark “${v.name}” applied`);break}
+   case'tbmanage':dlg(`<div class="dlgb"><h2>Manage Views</h2>${tbl(['Name','Variables','Shared','Saved by','Saved',''],tbViews().map(v=>[esc(v.name),v.vars?`${esc(v.vars.ledger.join(', '))} · ${esc(v.vars.from)} – ${esc(v.vars.to)}`:'No',v.shared?'Yes':'No',esc(v.by),esc(v.t),`<button class="btn sm d" data-a="tbdelview" data-v="${esc(v.name)}">Delete</button>`]))}<div class="ft"><button class="btn p" data-a="close">Close</button></div></div>`);return;
+   case'tbdelview':{const n=el.dataset.v;if(!confirm(`Delete bookmark “${n}”?`))return;D.tbViews=tbViews().filter(v=>v.name!==n);if(t.view===n)t.view='';audit('Deleted trial balance bookmark',n);closeDlg();toast('Bookmark deleted');break}
    case'tbsel':t.sel=t.sel===d?null:d;break;
    case'tbrow':t.selRow=t.selRow===el.dataset.id?null:el.dataset.id;break;
    case'tbadd':if(!t.rows.includes(d)){t.rows.push(d);t.collapsed=false}break;

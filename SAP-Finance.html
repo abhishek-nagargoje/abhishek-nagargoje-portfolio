@@ -656,7 +656,6 @@ function loginView(){return `<div class="lg2"><form class="lg-form lgcard" id="l
   <label for="em">Email <span class="req" aria-hidden="true">*</span></label><input class="fld" id="em" name="email" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" required>
   <label for="pw">Password <span class="req" aria-hidden="true">*</span></label><div class="pwf"><input class="fld" id="pw" name="password" type="password" autocomplete="current-password" required><button type="button" id="pwt" aria-label="Show password" aria-pressed="false" title="Show password">${ic('eye')}</button></div>
   <button type="submit" class="lg-btn" id="lb"><span>Sign In</span></button>
-  <p class="lg-note" style="text-align:center">Educational practice environment · Not affiliated with SAP SE</p>
  </form></div>`}
 function loginMsg(m){const b=$('#le');if(!b)return;if(!m){b.hidden=true;return}$('#let').textContent=m;b.hidden=false}
 async function doLogin(){

@@ -1,10 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { assertCan, currentUser } from '../auth/middleware.js';
-import { getPool, query, queryOne } from '../db/pool.js';
+import { query, queryOne } from '../db/pool.js';
 import { notFound } from '../lib/errors.js';
-import { camel, camelAll, likePattern, paging, paramId, parse, toPage, Where } from '../lib/http.js';
-import { logActivity } from '../services/activity.js';
+import { camelAll, likePattern, paging, paramId, parse, toPage, Where } from '../lib/http.js';
 import { getSetting } from '../services/settings.js';
 import { OPEN_DEFECT } from '../services/workflow.js';
 
@@ -26,37 +25,6 @@ usersRouter.get('/', async (req, res) => {
              + (SELECT count(*) FROM defects d WHERE d.assignee_id = u.id AND d.status = ANY($${w.params.length + 1}::text[])))::int AS open_items
        FROM users u ${w.sql} ORDER BY u.full_name`, [...w.params, OPEN_DEFECT]);
   res.json({ items: camelAll(rows) });
-});
-
-export const projectsRouter = Router();
-
-projectsRouter.get('/', async (_req, res) => {
-  const rows = await query(
-    `SELECT p.id, p.code, p.name, p.customer, p.status, p.is_sample,
-            (SELECT name FROM project_phases ph WHERE ph.project_id = p.id AND current_date BETWEEN ph.start_date AND ph.end_date
-              ORDER BY seq LIMIT 1) AS current_phase
-       FROM projects p ORDER BY p.id`);
-  res.json({ items: camelAll(rows) });
-});
-
-projectsRouter.get('/:id', async (req, res) => {
-  const id = paramId(req);
-  const p = await queryOne('SELECT * FROM projects WHERE id = $1', [id]);
-  if (!p) throw notFound('Project');
-  const phases = await query('SELECT id, name, seq, start_date, end_date FROM project_phases WHERE project_id = $1 ORDER BY seq', [id]);
-  res.json({ ...camel(p), phases: camelAll(phases) });
-});
-
-projectsRouter.patch('/:id', async (req, res) => {
-  assertCan(req, 'project.manage');
-  const id = paramId(req);
-  const me = currentUser(req);
-  const b = parse(z.object({ status: z.enum(['On Track', 'At Risk', 'Off Track', 'Closed']) }), req.body);
-  const row = await queryOne<{ code: string }>('UPDATE projects SET status = $2, updated_at = now() WHERE id = $1 RETURNING code', [id, b.status]);
-  if (!row) throw notFound('Project');
-  await logActivity(getPool(), { actorId: me.id, action: 'update', entityType: 'project', entityId: id, entityRef: row.code,
-    summary: `Project ${row.code} status set to ${b.status} by ${me.fullName}` });
-  res.json({ status: b.status });
 });
 
 export const processesRouter = Router();

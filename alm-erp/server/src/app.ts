@@ -15,7 +15,7 @@ import { dashboardRouter } from './routes/dashboard.js';
 import { defectsRouter } from './routes/defects.js';
 import { deploymentsRouter } from './routes/deployments.js';
 import {
-  activityRouter, notificationsRouter, processesRouter, projectsRouter, searchRouter, settingsRouter, usersRouter,
+  activityRouter, notificationsRouter, processesRouter, searchRouter, settingsRouter, usersRouter,
 } from './routes/directory.js';
 import { documentsRouter } from './routes/documents.js';
 import { inventoryRouter, materialsRouter, plantsRouter } from './routes/inventory.js';
@@ -24,6 +24,7 @@ import { mrpRouter } from './routes/mrp.js';
 import {
   goodsReceiptsRouter, procurementRouter, purchaseOrdersRouter, requisitionsRouter,
 } from './routes/procurement.js';
+import { projectsRouter } from './routes/projects.js';
 import { requirementsRouter } from './routes/requirements.js';
 import { deliveriesRouter, invoicesRouter, salesOrdersRouter } from './routes/sales.js';
 import { tasksRouter } from './routes/tasks.js';

@@ -48,7 +48,11 @@ companiesRouter.get('/:id', async (req, res) => {
   const docs = await query(
     `SELECT d.doc_type, d.id, d.number, d.status, d.amount, d.created_at FROM document_index d
       WHERE d.partner_id = $1 AND d.doc_type IN ('PO','SO','INV') ORDER BY d.created_at DESC LIMIT 20`, [id]);
-  res.json({ ...redact(req, camel(c)), documents: camelAll(docs) });
+  const history = await query(
+    `SELECT al.id, al.action, al.summary, al.created_at, u.full_name AS actor_name FROM activity_log al
+       LEFT JOIN users u ON u.id = al.actor_id WHERE al.entity_type = 'company' AND al.entity_id = $1
+      ORDER BY al.created_at DESC LIMIT 50`, [id]);
+  res.json({ ...redact(req, camel(c)), documents: camelAll(docs), history: camelAll(history) });
 });
 
 const gstin = z.string().trim().toUpperCase().regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/, 'GSTIN format is invalid.');

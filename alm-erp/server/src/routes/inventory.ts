@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { assertCan, currentUser } from '../auth/middleware.js';
-import { getPool, query, queryOne } from '../db/pool.js';
-import { notFound, ruleViolation } from '../lib/errors.js';
+import { getPool, query, queryOne, withTransaction } from '../db/pool.js';
+import { conflict, notFound, ruleViolation } from '../lib/errors.js';
+import { isMoney } from '../lib/money.js';
 import { camel, camelAll, likePattern, paging, paramId, parse, toPage, Where } from '../lib/http.js';
 import { logActivity } from '../services/activity.js';
 import { idempotentTransaction } from '../services/idempotency.js';
@@ -30,17 +31,18 @@ materialsRouter.get('/categories', async (_req, res) => {
 const materialQuery = z.object({
   q: z.string().trim().max(100).optional(),
   category: z.string().trim().max(60).optional(),
+  includeInactive: z.enum(['true']).optional(),
 });
 
 materialsRouter.get('/', async (req, res) => {
   const f = parse(materialQuery, req.query);
   const { page, pageSize, offset } = paging(req.query);
   const w = new Where();
-  w.add('m.is_active');
+  if (!f.includeInactive) w.add('m.is_active');
   if (f.q) w.add('(m.code ILIKE ? OR m.description ILIKE ?)', likePattern(f.q), likePattern(f.q));
   if (f.category) w.add('m.category = ?', f.category);
   const rows = await query(
-    `SELECT m.id, m.code, m.description, m.category, m.uom, m.cost_price, m.list_price, m.is_sample,
+    `SELECT m.id, m.code, m.description, m.category, m.uom, m.cost_price, m.list_price, m.is_sample, m.is_active,
             count(*) OVER() AS total_count
        FROM materials m ${w.sql} ORDER BY m.code LIMIT ${pageSize} OFFSET ${offset}`, w.params);
   res.json(toPage(rows, page, pageSize));
@@ -65,11 +67,77 @@ materialsRouter.get('/:id', async (req, res) => {
          FROM inventory_movements mv JOIN plants p ON p.id = mv.plant_id LEFT JOIN users u ON u.id = mv.created_by
         WHERE mv.material_id = $1 ORDER BY mv.created_at DESC, mv.id DESC LIMIT 50`, [id]),
   ]);
+  const history = await query(
+    `SELECT al.id, al.action, al.summary, al.created_at, u.full_name AS actor_name FROM activity_log al
+       LEFT JOIN users u ON u.id = al.actor_id WHERE al.entity_type = 'material' AND al.entity_id = $1
+      ORDER BY al.created_at DESC LIMIT 50`, [id]);
   res.json({
     ...camel(m),
     plants: camelAll<{ onHand: number; incoming: number; demand: number }>(plants).map((p) => ({ ...p, atp: p.onHand + p.incoming - p.demand })),
     movements: camelAll(movements),
+    history: camelAll(history),
   });
+});
+
+const materialFields = {
+  description: z.string().trim().min(1, 'Description is required.').max(200),
+  category: z.string().trim().min(1, 'Category is required.').max(60),
+  uom: z.string().trim().toUpperCase().regex(/^[A-Z]{1,5}$/, 'Unit: 1–5 letters, e.g. EA.').default('EA'),
+  costPrice: z.string().trim().refine(isMoney, 'Enter an amount with up to two decimals.'),
+  listPrice: z.string().trim().refine(isMoney, 'Enter an amount with up to two decimals.'),
+};
+
+materialsRouter.post('/', async (req, res) => {
+  assertCan(req, 'material.manage');
+  const me = currentUser(req);
+  const b = parse(z.object({
+    code: z.string().trim().toUpperCase().regex(/^[A-Z0-9-]{2,20}$/, 'Code: 2–20 letters, digits or hyphens.'),
+    ...materialFields,
+  }), req.body);
+  const id = await withTransaction(async (db) => {
+    if (await queryOne('SELECT 1 FROM materials WHERE code = $1', [b.code], db)) throw conflict(`Material ${b.code} already exists.`);
+    const row = await queryOne<{ id: number }>(
+      `INSERT INTO materials (code, description, category, uom, cost_price, list_price) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+      [b.code, b.description, b.category, b.uom, b.costPrice, b.listPrice], db);
+    await logActivity(db, { actorId: me.id, action: 'create', entityType: 'material', entityId: row!.id, entityRef: b.code,
+      summary: `${me.fullName} created material ${b.code} “${b.description}”` });
+    return row!.id;
+  });
+  res.status(201).json({ id });
+});
+
+materialsRouter.patch('/:id', async (req, res) => {
+  assertCan(req, 'material.manage');
+  const id = paramId(req);
+  const me = currentUser(req);
+  const b = parse(z.object({
+    description: materialFields.description.optional(), category: materialFields.category.optional(),
+    uom: z.string().trim().toUpperCase().regex(/^[A-Z]{1,5}$/, 'Unit: 1–5 letters, e.g. EA.').optional(),
+    costPrice: materialFields.costPrice.optional(), listPrice: materialFields.listPrice.optional(), isActive: z.boolean().optional(),
+  }), req.body);
+  await withTransaction(async (db) => {
+    const cur = await queryOne<{ code: string; cost_price: string; list_price: string; is_active: boolean }>(
+      'SELECT code, cost_price, list_price, is_active FROM materials WHERE id = $1 FOR UPDATE', [id], db);
+    if (!cur) throw notFound('Material');
+    if (b.isActive === false && cur.is_active) {
+      const open = await queryOne<{ n: number }>(
+        `SELECT ((SELECT count(*) FROM v_demand WHERE material_id = $1) + (SELECT count(*) FROM v_incoming WHERE material_id = $1))::int AS n`, [id], db);
+      if (open!.n) throw ruleViolation(`${cur.code} has open orders or requisitions and cannot be deactivated.`);
+    }
+    await query(
+      `UPDATE materials SET description = COALESCE($2, description), category = COALESCE($3, category), uom = COALESCE($4, uom),
+              cost_price = COALESCE($5::numeric, cost_price), list_price = COALESCE($6::numeric, list_price),
+              is_active = COALESCE($7, is_active), updated_at = now() WHERE id = $1`,
+      [id, b.description ?? null, b.category ?? null, b.uom ?? null, b.costPrice ?? null, b.listPrice ?? null, b.isActive ?? null], db);
+    const changes = [
+      b.costPrice && b.costPrice !== cur.cost_price ? `cost ${cur.cost_price} → ${b.costPrice}` : '',
+      b.listPrice && b.listPrice !== cur.list_price ? `list price ${cur.list_price} → ${b.listPrice}` : '',
+      b.isActive !== undefined && b.isActive !== cur.is_active ? (b.isActive ? 'reactivated' : 'deactivated') : '',
+    ].filter(Boolean);
+    await logActivity(db, { actorId: me.id, action: 'update', entityType: 'material', entityId: id, entityRef: cur.code,
+      summary: `Material ${cur.code} updated by ${me.fullName}${changes.length ? `: ${changes.join(', ')}` : ''}`, details: { fields: Object.keys(b) } });
+  });
+  res.json({ ok: true });
 });
 
 const stockQuery = z.object({

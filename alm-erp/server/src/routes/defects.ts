@@ -126,6 +126,8 @@ const updateSchema = z.object({
   severity: z.enum(SEVERITIES).optional(),
   priority: z.enum(PRIORITIES).optional(),
   assigneeId: z.number().int().positive().nullable().optional(),
+  requirementId: z.number().int().positive().nullable().optional(),
+  testCaseId: z.number().int().positive().nullable().optional(),
   status: z.enum(DEFECT_STATUSES).optional(),
   resolution: z.string().max(4000).optional(),
 });
@@ -141,7 +143,7 @@ defectsRouter.patch('/:id', async (req, res) => {
     }>('SELECT code, title, status, assignee_id, created_by, test_case_id, resolution FROM defects WHERE id = $1 FOR UPDATE', [id], db);
     if (!cur) throw notFound('Defect');
     const isAssignee = cur.assignee_id === me.id;
-    const otherFields = (['title', 'description', 'stepsToReproduce', 'expectedResult', 'actualResult', 'severity', 'priority', 'assigneeId'] as const)
+    const otherFields = (['title', 'description', 'stepsToReproduce', 'expectedResult', 'actualResult', 'severity', 'priority', 'assigneeId', 'requirementId', 'testCaseId'] as const)
       .some((k) => b[k] !== undefined);
     if (!can(req, 'defect.edit') && !(isAssignee && !otherFields)) throw forbidden('You are not allowed to edit this defect.');
 
@@ -167,6 +169,25 @@ defectsRouter.patch('/:id', async (req, res) => {
       await assertUserExists(db, b.assigneeId);
       changes.push(b.assigneeId ? 'reassigned' : 'unassigned');
     }
+    // Traceability links: a linked test case brings its requirement unless one is given explicitly.
+    let requirementId = b.requirementId;
+    if (b.testCaseId) {
+      const tc = await queryOne<{ code: string; requirement_id: number | null }>('SELECT code, requirement_id FROM test_cases WHERE id = $1', [b.testCaseId], db);
+      if (!tc) throw notFound('Linked test case');
+      if (requirementId === undefined && tc.requirement_id) requirementId = tc.requirement_id;
+      changes.push(`linked to ${tc.code}`);
+    }
+    if (requirementId) {
+      const r = await queryOne<{ code: string }>('SELECT code FROM requirements WHERE id = $1', [requirementId], db);
+      if (!r) throw notFound('Linked requirement');
+      changes.push(`linked to ${r.code}`);
+    }
+    if (b.testCaseId === null) changes.push('test case unlinked');
+    if (requirementId === null) changes.push('requirement unlinked');
+    await query(
+      `UPDATE defects SET requirement_id = CASE WHEN $2::boolean THEN $3::int ELSE requirement_id END,
+              test_case_id = CASE WHEN $4::boolean THEN $5::int ELSE test_case_id END WHERE id = $1`,
+      [id, requirementId !== undefined, requirementId ?? null, b.testCaseId !== undefined, b.testCaseId ?? null], db);
     const u = await queryOne<{ title: string; assignee_id: number | null }>(
       `UPDATE defects SET title = COALESCE($2, title), description = COALESCE($3, description),
          steps_to_reproduce = COALESCE($4, steps_to_reproduce), expected_result = COALESCE($5, expected_result),

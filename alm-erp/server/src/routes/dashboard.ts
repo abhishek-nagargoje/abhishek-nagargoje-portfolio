@@ -19,7 +19,7 @@ dashboardRouter.get('/overview', async (req, res) => {
   if (!project) return void res.json({ project: null });
   const pid = project.id as number;
 
-  const [phases, taskStatus, today, myOpen, upcoming, reqStatus, testStatus, defectSeverity, proc, sales, activity, notifications] =
+  const [phases, taskStatus, today, myOpen, upcoming, myUpcoming, reqStatus, testStatus, defectSeverity, proc, sales, inventory, activity, notifications] =
     await Promise.all([
       query('SELECT name, seq, start_date, end_date FROM project_phases WHERE project_id = $1 ORDER BY seq', [pid]),
       query<{ key: string; count: number }>('SELECT status AS key, count(*)::int AS count FROM tasks WHERE project_id = $1 GROUP BY status', [pid]),
@@ -37,6 +37,12 @@ dashboardRouter.get('/overview', async (req, res) => {
           WHERE t.project_id = $1 AND t.status <> 'Done' AND ($2::int IS NULL OR t.assignee_id = $2)
           ORDER BY t.due_date NULLS LAST, array_position(ARRAY['Very High','High','Medium','Low'], t.priority), t.id LIMIT 5`,
         [pid, null]),
+      query(
+        `SELECT t.id, t.code, t.title, t.status, t.due_date, t.priority, u.full_name AS assignee_name
+           FROM tasks t LEFT JOIN users u ON u.id = t.assignee_id
+          WHERE t.project_id = $1 AND t.status <> 'Done' AND t.assignee_id = $2
+          ORDER BY t.due_date NULLS LAST, array_position(ARRAY['Very High','High','Medium','Low'], t.priority), t.id LIMIT 5`,
+        [pid, me.id]),
       query<{ key: string; count: number }>('SELECT status AS key, count(*)::int AS count FROM requirements WHERE project_id = $1 GROUP BY status', [pid]),
       query<{ key: string; count: number }>('SELECT status AS key, count(*)::int AS count FROM test_cases WHERE project_id = $1 GROUP BY status', [pid]),
       query<{ key: string; count: number }>(
@@ -53,6 +59,13 @@ dashboardRouter.get('/overview', async (req, res) => {
         `SELECT (SELECT count(*) FROM sales_orders WHERE status IN ('Open','Partially Delivered'))::int AS open_sos,
                 (SELECT count(*) FROM deliveries WHERE status <> 'Billed')::int AS open_deliveries,
                 (SELECT COALESCE(sum(total_amount), 0) FROM invoices WHERE status = 'Posted')::numeric(15,2)::text AS billed_revenue`),
+      queryOne(
+        `SELECT (SELECT COALESCE(sum(on_hand), 0) FROM inventory_balances)::bigint AS units,
+                (SELECT COALESCE(sum(b.on_hand * m.cost_price), 0) FROM inventory_balances b JOIN materials m ON m.id = b.material_id)::numeric(15,2)::text AS value,
+                (SELECT COALESCE(sum(qty), 0) FROM v_incoming)::bigint AS incoming,
+                (SELECT count(*) FROM v_demand d LEFT JOIN inventory_balances b ON b.plant_id = d.plant_id AND b.material_id = d.material_id
+                  WHERE COALESCE(b.on_hand, 0) + COALESCE((SELECT qty FROM v_incoming i WHERE i.plant_id = d.plant_id AND i.material_id = d.material_id), 0) < d.qty)::int AS shortages,
+                (SELECT count(*) FROM inventory_movements WHERE created_at >= current_date AND movement_type <> 'INITIAL')::int AS movements_today`),
       query(
         `SELECT al.id, al.summary, al.created_at, al.entity_type, al.entity_id, u.full_name AS actor_name
            FROM activity_log al LEFT JOIN users u ON u.id = al.actor_id WHERE al.category = 'business'
@@ -67,13 +80,14 @@ dashboardRouter.get('/overview', async (req, res) => {
 
   res.json({
     project: { ...camel(project), phases: ph, currentPhase: current?.name ?? null, phaseEndsOn: current?.endDate ?? null, remainingDays },
-    tasks: { byStatus: countsBy(taskStatus), assignedToMe: myOpen!.n, upcoming: camelAll(upcoming) },
+    tasks: { byStatus: countsBy(taskStatus), assignedToMe: myOpen!.n, upcoming: camelAll(upcoming), myUpcoming: camelAll(myUpcoming) },
     today: camel(today!),
     requirements: { byStatus: countsBy(reqStatus) },
     tests: { byStatus: countsBy(testStatus) },
     defects: { openBySeverity: countsBy(defectSeverity) },
     procurement: { ...camel(proc!), canApprove: can(req, 'po.approve') },
     sales: camel(sales!),
+    inventory: camel(inventory!),
     recentActivity: camelAll(activity),
     notifications: camelAll(notifications),
   });

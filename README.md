@@ -1,5 +1,9 @@
 <a name="readme-top"></a>
 
+> **Meridian ALM workspace:** this repository also contains [`alm-erp/`](alm-erp/README.md), a full-stack
+> (PostgreSQL + Node.js/TypeScript API + React/TypeScript UI) application-lifecycle and ERP-operations workspace.
+> It is independent of the portfolio site and has its own setup, tests and documentation.
+
 # Modern Portfolio using Next.js and Framer Motion
 
 ![Modern Portfolio using Next.js and Framer Motion](/.github/images/img_main.png "Modern Portfolio using Next.js and Framer Motion")

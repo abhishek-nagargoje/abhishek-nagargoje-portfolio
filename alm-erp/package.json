@@ -1,13 +1,15 @@
 {
   "name": "alm-erp",
   "private": true,
-  "description": "Meridian ALM – application lifecycle and ERP operations workspace (PostgreSQL backend + React frontend)",
-  "engines": { "node": ">=20.11" },
+  "description": "Meridian ALM \u2013 application lifecycle and ERP operations workspace (PostgreSQL backend + React frontend)",
+  "engines": {
+    "node": ">=20.11"
+  },
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
-    "lint": "eslint server/src server/test web/src web/e2e",
+    "lint": "eslint --max-warnings 0 server/src server/test web/src web/e2e",
     "test": "pnpm --filter server test && pnpm --filter web test",
     "test:e2e": "pnpm --filter web test:e2e",
     "db:migrate": "pnpm --filter server db:migrate",
@@ -15,5 +17,12 @@
     "create-admin": "pnpm --filter server create-admin",
     "start": "pnpm --filter server start"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^17.13.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.71.2"
+  },
+  "type": "module"
 }

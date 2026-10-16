@@ -1,6 +1,8 @@
 <!doctype html>
 <!--
-  Meridian ALM – standalone ERP & ALM simulator (single file).
+  SAP Cloud ALM practice environment – standalone ERP & ALM simulator (single file) for local,
+  educational use only. Not affiliated with, endorsed by or connected to SAP SE; SAP and the SAP
+  logo are trademarks of SAP SE.
   ────────────────────────────────────────────────────────────
   Everything (markup, styles, logic, sample data) lives in this one file and runs offline
   directly from the file system.
@@ -20,8 +22,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>Meridian ALM</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230a6ed1'/%3E%3Cpath d='M5 25V7h4.2l6.8 9.5L22.8 7H27v18h-4.4V14.4L16 23.5l-6.6-9.1V25z' fill='%23fff'/%3E%3C/svg%3E">
+<title>SAP Cloud ALM</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 92 45'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%2300b8f1'/%3E%3Cstop offset='1' stop-color='%231e5fbb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 0h92L47 45H0z' fill='url(%23g)'/%3E%3C/svg%3E">
 <style>
 /* ═════════════════════ 2. EMBEDDED STYLES ═════════════════════
    Tokens measured from the reference screenshots (Fiori "Quartz Light" style):
@@ -70,6 +72,8 @@ svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-widt
 .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; }
 .logo { width: 26px; height: 26px; border-radius: 5px; background: var(--brand); display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .logo svg { width: 16px; height: 16px; }
+.saplogo { display: inline-block; width: 54px; height: 26px; flex: none; } .saplogo svg { width: 100%; height: 100%; display: block; }
+.signin-card .saplogo { width: 76px; height: 37px; }
 .login-main .brand { font-size: 20px; margin-bottom: 32px; } .login-main .brand .logo { width: 36px; height: 36px; border-radius: 7px; }
 .login-main h1 { font-size: 24px; margin-bottom: 4px; }
 .login-form { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
@@ -413,7 +417,7 @@ const ICONS = {
   shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
 };
 const icon = (name, cls = 'i') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
-const LOGO = '<span class="logo" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5 25V7h4.2l6.8 9.5L22.8 7H27v18h-4.4V14.4L16 23.5l-6.6-9.1V25z" fill="#fff"/></svg></span>';
+const LOGO = '<span class="saplogo" aria-hidden="true"><svg viewBox="0 0 92 45"><defs><linearGradient id="sapg" x2="0" y2="1"><stop offset="0" stop-color="#00b8f1"/><stop offset="1" stop-color="#1e5fbb"/></linearGradient></defs><path d="M0 0h92L47 45H0z" fill="url(#sapg)"/><text x="7" y="32.5" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="26" letter-spacing="-0.5">SAP</text></svg></span>';
 
 /* ═════════════════════ 4. INITIAL SAMPLE DATA ═════════════════════
    Deterministic generators (same seeds as the Meridian ALM server sample data).
@@ -1874,7 +1878,7 @@ function runAction(fn, okMsg) {
 function viewLogin() {
   const expired = state.ui.loginNote;
   return `<main class="signin"><div class="signin-card">
-      <span class="brand">${LOGO} Meridian ALM</span>
+      <span class="brand">${LOGO} SAP Cloud ALM</span>
       <h1>Sign in</h1><p class="muted">Enter your email address and password.</p>
       <form class="login-form" id="login-form" novalidate>
         ${expired ? `<div class="msg info" role="status">${icon('info')}<div>${esc(expired)}</div></div>` : ''}
@@ -1883,7 +1887,7 @@ function viewLogin() {
         <div class="field"><label for="login-password">Password</label><div class="pw"><input class="input" id="login-password" name="password" type="password" autocomplete="current-password" required aria-required="true" maxlength="128">
           <button type="button" data-action="toggle-password" aria-label="Show password" aria-pressed="false">${icon('eye')}</button></div></div>
         <button type="submit" class="btn em" id="login-submit">Sign in</button>
-      </form></div></main>`;
+      </form><p class="signin-foot">Educational practice environment · Not affiliated with SAP SE</p></div></main>`;
 }
 
 const NAV = [
@@ -1907,8 +1911,8 @@ function viewShell() {
   return `<header class="shell">
     <button type="button" class="sbtn" data-action="toggle-nav" aria-label="${navExpanded() ? 'Collapse' : 'Expand'} navigation" aria-expanded="${navExpanded()}" aria-controls="sidenav">${icon('menu')}</button>
     <button type="button" class="sbtn hide-sm" data-action="back" aria-label="Back">${icon('left')}</button>
-    <a class="brand" href="#/" aria-label="Meridian ALM home">${LOGO}</a>
-    <div style="position:relative;min-width:0"><button type="button" class="shell-app sbtn" data-action="toggle-pop" data-pop="apps" aria-expanded="${pop === 'apps'}" aria-haspopup="menu"><span class="shell-title" style="font-weight:400">${esc(state.route.path === 'home' ? 'Home' : navLabel(state.route.path) || 'Meridian ALM')}</span>${icon('chevron')}</button>
+    <a class="brand" href="#/" aria-label="SAP Cloud ALM home">${LOGO}</a>
+    <div style="position:relative;min-width:0"><button type="button" class="shell-app sbtn" data-action="toggle-pop" data-pop="apps" aria-expanded="${pop === 'apps'}" aria-haspopup="menu"><span class="shell-title" style="font-weight:400">${esc(state.route.path === 'home' ? 'Home' : navLabel(state.route.path) || 'SAP Cloud ALM')}</span>${icon('chevron')}</button>
       ${pop === 'apps' ? `<div class="pop" role="menu" style="left:0;right:auto;max-height:70vh;overflow-y:auto">${NAV.map(([g, items]) => `<div class="pop-h small muted">${esc(g)}</div><div class="menu">${items.filter(([k]) => k !== 'admin' || (realUser().role === 'ADMIN' && !state.session.actingAs)).map(([k, l, ic]) => `<button type="button" role="menuitem" data-action="go" data-href="${k === 'home' ? '#/' : href(k)}">${icon(ic)}${esc(l)}</button>`).join('')}</div>`).join('')}</div>` : ''}</div>
     ${state.session.actingAs ? `<span class="acting" role="status">${icon('swap')}<span class="hide-md">Working as</span> ${esc(u.name)} <button type="button" data-action="stop-work-as">Stop</button></span>` : ''}
     <span class="spacer"></span>
@@ -2896,7 +2900,7 @@ function render() {
   const keep = a && a.id && app.contains(a) ? { id: a.id, s: a.selectionStart, e: a.selectionEnd } : null;
   if (!state.session) {
     app.innerHTML = viewLogin();
-    document.title = 'Sign in – Meridian ALM';
+    document.title = 'Sign in – SAP Cloud ALM';
   } else {
     let html;
     try { html = (VIEWS[state.route.path] || viewNotFound)(); } catch (err) {
@@ -2904,7 +2908,7 @@ function render() {
       html = page({ title: 'This screen could not be displayed', body: `<div class="msg bad">${icon('alert')}<div>An unexpected error occurred while displaying this screen. No data was changed.</div></div><a class="btn" href="#/">Go to the launchpad</a>` });
     }
     app.innerHTML = `${viewShell()}<div class="body">${viewNav()}<main id="main" tabindex="-1">${html}</main></div>`;
-    document.title = `${navLabel(state.route.path) || 'Page not found'} – Meridian ALM`;
+    document.title = `${navLabel(state.route.path) || 'Page not found'} – SAP Cloud ALM`;
   }
   if (keep) {
     const el = document.getElementById(keep.id);

@@ -1,0 +1,408 @@
+openapi: 3.1.0
+info:
+  title: Meridian ALM API
+  version: 1.0.0
+  description: |
+    JSON API for the Meridian ALM workspace (implementation lifecycle + ERP operations).
+
+    **Authentication.** `POST /api/auth/login` sets an HttpOnly session cookie and returns a `csrfToken`.
+    Every state-changing request (POST/PUT/PATCH/DELETE) must send the token in `X-CSRF-Token`
+    and use `Content-Type: application/json`. Cross-origin requests are rejected.
+
+    **Authorization.** Permissions are derived from the user's roles and enforced by the server.
+    `403 FORBIDDEN` is returned when the permission is missing.
+
+    **Errors.** `{ "error": { "code", "message", "details?", "requestId" } }` with codes
+    `BAD_REQUEST` (400, validation), `UNAUTHENTICATED` (401), `FORBIDDEN`/`CSRF_REJECTED`/`PASSWORD_CHANGE_REQUIRED` (403),
+    `NOT_FOUND` (404), `CONFLICT` (409), `BUSINESS_RULE` (422), `RATE_LIMITED` (429), `INTERNAL` (500).
+
+    **Pagination.** List endpoints accept `page` (1-based) and `pageSize` (≤ 200) and return
+    `{ items, total, page, pageSize }`.
+
+    **Idempotency.** Transaction endpoints marked *idempotent* accept an `Idempotency-Key` header
+    (8–100 chars `[A-Za-z0-9_-]`). Replays return the original response with `Idempotent-Replayed: true`.
+
+    **Money.** Amounts are decimal strings with two places (e.g. `"1180.00"`), currency INR.
+servers:
+  - url: /api
+components:
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: alm_sid
+      description: "`__Host-alm_sid` in production."
+    csrf:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+  parameters:
+    id: { name: id, in: path, required: true, schema: { type: integer } }
+    page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    pageSize: { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 25 } }
+    q: { name: q, in: query, schema: { type: string, maxLength: 100 } }
+    idempotencyKey: { name: Idempotency-Key, in: header, schema: { type: string } }
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: {}
+            requestId: { type: string }
+    Page:
+      type: object
+      properties:
+        items: { type: array, items: { type: object } }
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+    Priority: { type: string, enum: [Very High, High, Medium, Low] }
+    Severity: { type: string, enum: [Critical, High, Medium, Low] }
+    Money: { type: string, pattern: '^\d{1,13}(\.\d{1,2})?$' }
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        email: { type: string }
+        fullName: { type: string }
+        mustChangePassword: { type: boolean }
+        roles: { type: array, items: { type: object, properties: { code: { type: string }, name: { type: string } } } }
+        permissions: { type: array, items: { type: string } }
+    RequirementInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, maxLength: 200 }
+        description: { type: string }
+        priority: { $ref: '#/components/schemas/Priority' }
+        processId: { type: [integer, 'null'] }
+        fitDecision: { type: string, enum: [Yes, Partly, No] }
+        fitNotes: { type: string }
+        assigneeId: { type: [integer, 'null'] }
+        status: { type: string, enum: [New, Fit-to-Standard, In Realization, In Test, Approved, Rejected], description: PATCH only. Approved requires req.signoff and all linked tests Passed. }
+    TaskInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        priority: { $ref: '#/components/schemas/Priority' }
+        requirementId: { type: [integer, 'null'] }
+        assigneeId: { type: [integer, 'null'] }
+        dueDate: { type: [string, 'null'], format: date }
+        status: { type: string, enum: [Open, In Progress, Blocked, Done], description: PATCH only }
+    TestCaseInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        priority: { $ref: '#/components/schemas/Priority' }
+        requirementId: { type: [integer, 'null'] }
+        assigneeId: { type: [integer, 'null'] }
+        steps:
+          type: array
+          items: { type: object, required: [action], properties: { action: { type: string }, expectedResult: { type: string } } }
+    DefectInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        stepsToReproduce: { type: string }
+        expectedResult: { type: string }
+        actualResult: { type: string }
+        severity: { $ref: '#/components/schemas/Severity' }
+        priority: { $ref: '#/components/schemas/Priority' }
+        requirementId: { type: [integer, 'null'] }
+        testCaseId: { type: [integer, 'null'] }
+        assigneeId: { type: [integer, 'null'] }
+        status: { type: string, enum: [New, In Process, Fixed, Retest, Closed, Rejected], description: PATCH only. Fixed/Rejected need a resolution; Closed needs defect.close and a passed linked test. }
+        resolution: { type: string }
+    LineItem:
+      type: object
+      required: [materialId, quantity]
+      properties:
+        materialId: { type: integer }
+        quantity: { type: integer, minimum: 1 }
+        unitPrice: { $ref: '#/components/schemas/Money' }
+    TransactionResult:
+      type: object
+      properties:
+        id: { type: integer }
+        number: { type: integer }
+        message: { type: string }
+security:
+  - session: []
+    csrf: []
+paths:
+  /health:
+    get: { summary: Liveness probe, security: [], responses: { '200': { description: OK } } }
+  /auth/login:
+    post:
+      summary: Sign in (rate limited; locks the account for 15 min after 5 failures)
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, required: [email, password], properties: { email: { type: string }, password: { type: string } } }
+      responses:
+        '200': { description: Signed in, content: { application/json: { schema: { type: object, properties: { user: { $ref: '#/components/schemas/User' }, csrfToken: { type: string } } } } } }
+        '401': { description: Invalid credentials, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '429': { description: Too many attempts }
+  /auth/session:
+    get: { summary: Current session (user is null when signed out), security: [], responses: { '200': { description: OK } } }
+  /auth/logout:
+    post: { summary: Sign out and destroy the session, responses: { '204': { description: Signed out } } }
+  /auth/change-password:
+    post:
+      summary: Change own password (revokes all sessions and issues a new one)
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, required: [currentPassword, newPassword], properties: { currentPassword: { type: string }, newPassword: { type: string, minLength: 10 } } }
+      responses: { '200': { description: Changed }, '400': { description: Wrong current password or policy violation } }
+  /dashboard/overview:
+    get: { summary: Overview cards for a project, parameters: [{ name: projectId, in: query, schema: { type: integer } }], responses: { '200': { description: OK } } }
+  /dashboard/home:
+    get: { summary: Personal to-dos, approvals and launchpad tiles, responses: { '200': { description: OK } } }
+  /users:
+    get: { summary: Team directory with open-item counts, parameters: [{ $ref: '#/components/parameters/q' }, { name: role, in: query, schema: { type: string } }], responses: { '200': { description: OK } } }
+  /projects:
+    get: { summary: List projects, responses: { '200': { description: OK } } }
+  /projects/{id}:
+    get: { summary: Project with phases, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+    patch: { summary: Set project status (project.manage), parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /processes:
+    get: { summary: Business processes with steps, record counts and linked requirements, responses: { '200': { description: OK } } }
+  /requirements:
+    get:
+      summary: List requirements
+      parameters:
+        - { $ref: '#/components/parameters/q' }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: priority, in: query, schema: { type: string } }
+        - { name: processId, in: query, schema: { type: integer } }
+        - { name: assigneeId, in: query, schema: { oneOf: [{ type: integer }, { const: me }] } }
+        - { name: stage, in: query, schema: { type: string, enum: [DEV, QA, PROD] } }
+        - { name: sort, in: query, schema: { type: string, example: -updated } }
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/pageSize' }
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Page' } } } } }
+    post:
+      summary: Create requirement (req.create)
+      requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/RequirementInput' } } } }
+      responses: { '201': { description: Created } }
+  /requirements/{id}:
+    get: { summary: Requirement with tasks, tests, defects, deployments and history, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+    patch:
+      summary: Update requirement (req.edit; status Approved requires req.signoff)
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/RequirementInput' } } } }
+      responses: { '200': { description: Updated }, '422': { description: Invalid transition or sign-off blocked } }
+  /requirements/{id}/generate-tasks:
+    post: { summary: Create the standard implementation tasks once (task.create), parameters: [{ $ref: '#/components/parameters/id' }], responses: { '201': { description: Created } } }
+  /tasks:
+    get:
+      summary: List tasks
+      parameters:
+        - { $ref: '#/components/parameters/q' }
+        - { name: status, in: query, schema: { type: string, description: 'Task status or "open"' } }
+        - { name: assigneeId, in: query, schema: { description: 'user id, "me" or "none"' } }
+        - { name: requirementId, in: query, schema: { type: integer } }
+        - { name: overdue, in: query, schema: { const: 'true' } }
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/pageSize' }
+      responses: { '200': { description: OK } }
+    post: { summary: Create task (task.create), requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/TaskInput' } } } }, responses: { '201': { description: Created } } }
+  /tasks/{id}:
+    get: { summary: Task with history, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+    patch: { summary: Update task (task.edit, or status only by the assignee), parameters: [{ $ref: '#/components/parameters/id' }], requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/TaskInput' } } } }, responses: { '200': { description: OK } } }
+  /test-cases:
+    get: { summary: List test cases, parameters: [{ $ref: '#/components/parameters/q' }, { name: status, in: query, schema: { type: string } }, { name: requirementId, in: query, schema: { type: integer } }], responses: { '200': { description: OK } } }
+    post: { summary: Create test case with steps (test.manage), requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/TestCaseInput' } } } }, responses: { '201': { description: Created } } }
+  /test-cases/{id}:
+    get: { summary: Test case with steps, executions and defects, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+    patch: { summary: Update test case; replacing steps retires the old ones (test.manage), parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /test-cases/{id}/executions:
+    post: { summary: Start an execution (test.execute), parameters: [{ $ref: '#/components/parameters/id' }], responses: { '201': { description: Started }, '422': { description: No steps or already running } } }
+  /test-executions/{executionId}/steps/{stepId}:
+    post:
+      summary: Record a step result (test.execute). A failure raises a defect automatically.
+      parameters:
+        - { name: executionId, in: path, required: true, schema: { type: integer } }
+        - { name: stepId, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, required: [result], properties: { result: { enum: [Passed, Failed] }, actualResult: { type: string } } }
+      responses: { '200': { description: Recorded } }
+  /test-executions/{executionId}/cancel:
+    post: { summary: Cancel an open execution, parameters: [{ name: executionId, in: path, required: true, schema: { type: integer } }], responses: { '200': { description: OK } } }
+  /defects:
+    get: { summary: List defects, parameters: [{ $ref: '#/components/parameters/q' }, { name: status, in: query, schema: { type: string } }, { name: severity, in: query, schema: { type: string } }], responses: { '200': { description: OK } } }
+    post: { summary: Report defect (defect.create), requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/DefectInput' } } } }, responses: { '201': { description: Created } } }
+  /defects/{id}:
+    get: { summary: Defect with history, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+    patch: { summary: Update defect, parameters: [{ $ref: '#/components/parameters/id' }], requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/DefectInput' } } } }, responses: { '200': { description: OK } } }
+  /comments:
+    get: { summary: Comments for a record, parameters: [{ name: entityType, in: query, required: true, schema: { enum: [requirement, task, test_case, defect] } }, { name: entityId, in: query, required: true, schema: { type: integer } }], responses: { '200': { description: OK } } }
+    post: { summary: Add a comment, responses: { '201': { description: Created } } }
+  /deployments:
+    get: { summary: Landscape status of each requirement and promotion history, responses: { '200': { description: OK } } }
+  /deployments/{id}/checks:
+    get: { summary: Promotion gate evaluation for a requirement, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /deployments/{id}/promote:
+    post: { summary: Record promotion to the next stage (deploy.qa / deploy.prod). This is a workflow record, not a technical transport., parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: Promoted }, '422': { description: Gate failed } } }
+  /monitoring/kpis:
+    get: { summary: KPIs computed from stored business documents (no external telemetry), responses: { '200': { description: OK } } }
+  /monitoring/incidents:
+    get: { summary: List incidents, responses: { '200': { description: OK } } }
+    post: { summary: Open incident (incident.manage), responses: { '201': { description: Created } } }
+  /monitoring/incidents/{id}:
+    get: { summary: Incident with notes and defects, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /monitoring/incidents/{id}/notes:
+    post: { summary: Add investigation/action note, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '201': { description: Created } } }
+  /monitoring/incidents/{id}/resolve:
+    post: { summary: Resolve incident, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /monitoring/incidents/{id}/reopen:
+    post: { summary: Reopen incident, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /monitoring/incidents/{id}/defect:
+    post: { summary: Raise a defect from the incident (defect.create), parameters: [{ $ref: '#/components/parameters/id' }], responses: { '201': { description: Created } } }
+  /notifications:
+    get: { summary: Own notifications, parameters: [{ name: unread, in: query, schema: { const: 'true' } }], responses: { '200': { description: OK } } }
+  /notifications/unread-count:
+    get: { summary: Unread count, responses: { '200': { description: OK } } }
+  /notifications/{id}/read:
+    post: { summary: Mark own notification read, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '204': { description: OK } } }
+  /notifications/read-all:
+    post: { summary: Mark all own notifications read, responses: { '204': { description: OK } } }
+  /activity:
+    get: { summary: Activity log (category=security requires admin.audit), parameters: [{ name: category, in: query, schema: { enum: [business, security] } }], responses: { '200': { description: OK } } }
+  /settings/business:
+    get: { summary: Business rules visible to all users (approval threshold, GST rate), responses: { '200': { description: OK } } }
+  /search:
+    get: { summary: Global search across records and documents, parameters: [{ name: q, in: query, required: true, schema: { type: string, minLength: 2 } }], responses: { '200': { description: OK } } }
+  /plants:
+    get: { summary: Plants with stock units and value, responses: { '200': { description: OK } } }
+  /materials:
+    get: { summary: Material search, parameters: [{ $ref: '#/components/parameters/q' }, { name: category, in: query, schema: { type: string } }], responses: { '200': { description: OK } } }
+  /materials/categories:
+    get: { summary: Material categories, responses: { '200': { description: OK } } }
+  /materials/{id}:
+    get: { summary: Material with stock per plant and movements, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /inventory/stock:
+    get: { summary: Stock overview with ATP at a plant, parameters: [{ $ref: '#/components/parameters/q' }, { name: category, in: query, schema: { type: string } }, { name: plantId, in: query, schema: { type: integer } }], responses: { '200': { description: OK } } }
+  /inventory/summary:
+    get: { summary: Units and value by category and plant, responses: { '200': { description: OK } } }
+  /inventory/movements:
+    get: { summary: Stock movement history, responses: { '200': { description: OK } } }
+  /inventory/availability:
+    get: { summary: On hand, incoming, demand and ATP for a material at a plant, responses: { '200': { description: OK } } }
+  /inventory/transfers:
+    post:
+      summary: Stock transfer between plants (inventory.transfer, idempotent)
+      parameters: [{ $ref: '#/components/parameters/idempotencyKey' }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, required: [materialId, fromPlantId, toPlantId, quantity], properties: { materialId: { type: integer }, fromPlantId: { type: integer }, toPlantId: { type: integer }, quantity: { type: integer }, notes: { type: string } } }
+      responses: { '201': { description: Posted }, '422': { description: Insufficient stock } }
+  /inventory/adjustments:
+    post: { summary: Stock adjustment with reason (inventory.adjust, idempotent), parameters: [{ $ref: '#/components/parameters/idempotencyKey' }], responses: { '201': { description: Posted } } }
+  /mrp:
+    get: { summary: Net requirements at a plant, parameters: [{ name: plantId, in: query, required: true, schema: { type: integer } }], responses: { '200': { description: OK } } }
+  /mrp/requisitions:
+    post: { summary: Convert a shortage into a purchase requisition (mrp.run, idempotent), responses: { '201': { description: Created } } }
+  /purchase-requisitions:
+    get: { summary: List requisitions, responses: { '200': { description: OK } } }
+    post: { summary: Create requisition (pr.create, idempotent), parameters: [{ $ref: '#/components/parameters/idempotencyKey' }], responses: { '201': { description: Created } } }
+  /purchase-requisitions/{id}/cancel:
+    post: { summary: Cancel an open requisition, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /purchase-orders:
+    get: { summary: List purchase orders (status may be "open"), responses: { '200': { description: OK } } }
+    post:
+      summary: Create purchase order (po.create, idempotent). Net above the configured threshold → Pending Approval.
+      parameters: [{ $ref: '#/components/parameters/idempotencyKey' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vendorId]
+              properties:
+                vendorId: { type: integer }
+                plantId: { type: integer }
+                customerId: { type: [integer, 'null'] }
+                requisitionId: { type: [integer, 'null'] }
+                salesOrderId: { type: [integer, 'null'] }
+                items: { type: array, items: { $ref: '#/components/schemas/LineItem' } }
+      responses: { '201': { description: Created } }
+  /purchase-orders/{id}:
+    get: { summary: Purchase order with items, receipts and history, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /purchase-orders/{id}/approve:
+    post: { summary: Approve (po.approve; creator cannot self-approve unless configured), parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK }, '409': { description: Not pending } } }
+  /purchase-orders/{id}/reject:
+    post: { summary: Reject with reason (po.approve), parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /purchase-orders/{id}/goods-receipts:
+    post: { summary: Post goods receipt; updates stock exactly once (gr.post, idempotent), parameters: [{ $ref: '#/components/parameters/id' }, { $ref: '#/components/parameters/idempotencyKey' }], responses: { '201': { description: Posted } } }
+  /goods-receipts:
+    get: { summary: List goods receipts, responses: { '200': { description: OK } } }
+  /procurement/quick-order:
+    post: { summary: Create PR and PO for a customer in one transaction (pr.create + po.create, idempotent), responses: { '201': { description: Created } } }
+  /sales-orders:
+    get: { summary: List sales orders, responses: { '200': { description: OK } } }
+    post:
+      summary: Create sales order (so.create, idempotent); reports uncovered demand
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, required: [customerId, plantId, items], properties: { customerId: { type: integer }, plantId: { type: integer }, requestedDeliveryDate: { type: string, format: date }, items: { type: array, items: { $ref: '#/components/schemas/LineItem' } } } }
+      responses: { '201': { description: Created } }
+  /sales-orders/{id}:
+    get: { summary: Sales order with items, availability, deliveries and POs, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /sales-orders/{id}/cancel:
+    post: { summary: Cancel an order without deliveries, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /sales-orders/{id}/deliveries:
+    post: { summary: Create outbound delivery (delivery.create, idempotent), parameters: [{ $ref: '#/components/parameters/id' }], responses: { '201': { description: Created } } }
+  /deliveries:
+    get: { summary: List deliveries, responses: { '200': { description: OK } } }
+  /deliveries/{id}:
+    get: { summary: Delivery with items, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /deliveries/{id}/pick:
+    post: { summary: Confirm picking (delivery.pick), parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /deliveries/{id}/goods-issue:
+    post: { summary: Post goods issue atomically (delivery.goods_issue, idempotent), parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK }, '422': { description: Not picked or insufficient stock } } }
+  /deliveries/{id}/invoice:
+    post: { summary: Create the single invoice for a delivery (invoice.create, idempotent), parameters: [{ $ref: '#/components/parameters/id' }], responses: { '201': { description: Created } } }
+  /invoices:
+    get: { summary: List invoices, responses: { '200': { description: OK } } }
+  /invoices/{id}:
+    get: { summary: Invoice with lines, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /companies:
+    get: { summary: Customers and vendors (contact data redacted without company.sensitive), parameters: [{ $ref: '#/components/parameters/q' }, { name: type, in: query, schema: { enum: [Customer, Vendor] } }, { name: status, in: query, schema: { enum: [Active, Blocked] } }], responses: { '200': { description: OK } } }
+    post: { summary: Create company (company.manage), responses: { '201': { description: Created } } }
+  /companies/{id}:
+    get: { summary: Company with recent documents, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+    patch: { summary: Update company (company.manage), parameters: [{ $ref: '#/components/parameters/id' }], responses: { '200': { description: OK } } }
+  /documents:
+    get: { summary: All ERP documents, parameters: [{ name: type, in: query, schema: { enum: [PR, PO, GR, SO, DL, INV, ST] } }, { name: number, in: query, schema: { type: string } }], responses: { '200': { description: OK } } }
+  /documents/flow:
+    get: { summary: Documents linked to a document, parameters: [{ name: type, in: query, required: true, schema: { type: string } }, { name: id, in: query, required: true, schema: { type: integer } }], responses: { '200': { description: OK } } }
+  /admin/users:
+    get: { summary: Users with roles and security status (admin.users), responses: { '200': { description: OK } } }
+    post: { summary: Create user with a temporary password (admin.users), responses: { '201': { description: Created } } }
+  /admin/users/{id}:
+    patch: { summary: Update name, roles, active flag, unlock (admin.users), parameters: [{ $ref: '#/components/parameters/id' }], responses: { '204': { description: OK } } }
+  /admin/users/{id}/reset-password:
+    post: { summary: Set a temporary password; user must change it at next sign-in, parameters: [{ $ref: '#/components/parameters/id' }], responses: { '204': { description: OK } } }
+  /admin/roles:
+    get: { summary: Roles and permissions (admin.users), responses: { '200': { description: OK } } }
+  /admin/settings:
+    get: { summary: Business configuration (admin.settings), responses: { '200': { description: OK } } }
+  /admin/settings/{key}:
+    put: { summary: Change a setting (admin.settings), parameters: [{ name: key, in: path, required: true, schema: { enum: [po_approval_threshold, gst_rate_bp, allow_self_approval, po_stuck_after_hours] } }], responses: { '200': { description: OK } } }

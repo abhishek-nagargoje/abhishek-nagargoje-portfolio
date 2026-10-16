@@ -57,6 +57,11 @@ svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-widt
 .prewrap { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* ── Login ── */
+.signin { min-height: 100vh; background: #f5f6f7; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.signin-card { width: min(400px, 100%); background: #fff; border-radius: 8px; box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.08); padding: 40px 32px 32px; }
+.signin-card .brand { font-size: 18px; margin-bottom: 28px; } .signin-card .brand .logo { width: 34px; height: 34px; border-radius: 6px; }
+.signin-card h1 { font-size: 22px; margin-bottom: 4px; }
+.signin-foot { text-align: center; color: var(--text-2); font-size: 12px; margin-top: 18px; }
 .login { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 480px); }
 .login-aside { background: linear-gradient(180deg, #2b4561 0%, #354a5f 55%, #4d6a86 100%); color: #fff; padding: 48px; display: flex; flex-direction: column; justify-content: space-between; }
 .login-aside h2 { font-size: 28px; line-height: 1.3; max-width: 520px; }
@@ -79,6 +84,9 @@ svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-widt
 .sbtn { height: 36px; min-width: 36px; padding: 0 8px; border: 0; border-radius: var(--r); background: none; color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; position: relative; }
 .sbtn:hover { background: var(--shell-hover); } .sbtn:focus-visible { outline: 1px dotted #fff; outline-offset: -3px; }
 .shell .brand { color: #fff; padding: 0 8px; font-size: 14px; } .shell .brand:hover { text-decoration: none; }
+.shell-app { display: inline-flex; align-items: center; gap: 4px; font-size: 16px; color: #fff; padding: 0 8px; height: 36px; border-radius: var(--r); white-space: nowrap; overflow: hidden; }
+.shell-app:hover { background: var(--shell-hover); text-decoration: none; }
+.shell-app svg.i { width: 14px; height: 14px; }
 .shell-title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sim-tag { font-size: 11px; border: 1px solid rgba(255,255,255,.4); border-radius: 3px; padding: 0 5px; opacity: .85; white-space: nowrap; }
 .acting { background: #e9730c; color: #fff; border-radius: 3px; padding: 2px 8px; font-size: 12px; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; }
@@ -91,7 +99,9 @@ svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-widt
 .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--brand); color: #fff; border: 0; font-weight: 700; font-size: 13px; cursor: pointer; }
 .badge-count { position: absolute; top: 2px; right: 0; min-width: 16px; height: 16px; border-radius: 8px; padding: 0 4px; background: var(--negative); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; }
 .body { display: flex; min-height: calc(100vh - var(--h-shell)); }
-.nav { width: var(--w-nav); flex: none; background: var(--nav); position: sticky; top: var(--h-shell); height: calc(100vh - var(--h-shell)); overflow-y: auto; overflow-x: hidden; z-index: 20; }
+.nav { width: var(--w-nav); flex: none; background: var(--nav); position: sticky; top: var(--h-shell); height: calc(100vh - var(--h-shell)); overflow-y: auto; overflow-x: hidden; z-index: 20; scrollbar-width: none; }
+.nav::-webkit-scrollbar { display: none; }
+.body::before { content: ""; position: fixed; left: 0; top: 0; bottom: 0; width: var(--w-nav); background: var(--nav); z-index: 0; }
 .nav.x { width: var(--w-nav-x); }
 .nav-group { padding: 10px 12px 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--nav-icon); border-bottom: 1px solid var(--nav-sep); white-space: nowrap; }
 .nav:not(.x) .nav-group { height: 6px; padding: 0; font-size: 0; }
@@ -211,6 +221,21 @@ table.dt { width: 100%; border-collapse: collapse; background: #fff; }
 .tile .u { font-size: 12px; color: var(--text-2); }
 .tile.todo { width: 280px; height: auto; min-height: 118px; gap: 6px; } .tile.todo .t { font-weight: 600; }
 .lp .none { color: #fff; }
+.lp-tabs { background: var(--shell); display: flex; gap: 28px; padding: 0 20px; overflow-x: auto; box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
+.lp-tabs a { color: #fff; height: 40px; display: inline-flex; align-items: center; white-space: nowrap; border-bottom: 3px solid transparent; text-decoration: none; font-size: 14px; }
+.lp-tabs a:hover { border-bottom-color: rgba(255,255,255,.5); } .lp-tabs a[aria-selected="true"] { border-bottom-color: #fff; }
+.lp-in { padding: 14px 16px 32px; } .lp .tiles { gap: 8px; }
+.tile.app { height: 160px; } .tile.app .f svg.i { width: 28px; height: 28px; color: #5b738b; stroke-width: 1.3; }
+/* Overview page */
+.variant { display: inline-flex; align-items: center; gap: 8px; font-size: 24px; color: var(--brand); border: 0; cursor: pointer; padding: 0; }
+.ov-filters { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-top: 18px; } .ov-filters .field { width: 380px; max-width: 100%; }
+.ov-links { margin-left: auto; display: flex; gap: 24px; flex-wrap: wrap; }
+.lrow.ind.warn { border-left-color: var(--critical); } .v.warn { color: var(--critical); }
+.bignum { display: flex; flex-wrap: wrap; gap: 6px 32px; align-items: baseline; padding: 4px 0 12px; }
+.bignum b { font-size: 40px; font-weight: 400; color: var(--brand); line-height: 1; } .bignum span { color: var(--text-2); margin-left: 6px; }
+.bignum a { font-size: 14px; } .due-late { color: var(--critical-text); }
+.ovgrid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); align-items: stretch; }
+.ovgrid .wide { grid-column: span 2; } @media (max-width: 760px) { .ovgrid .wide { grid-column: auto; } }
 
 /* ── Charts ── */
 svg.chart { width: 100%; height: auto; display: block; overflow: visible; } svg.chart text { font-family: var(--font); fill: var(--text-2); }
@@ -259,6 +284,7 @@ a.hbar:hover .lab { color: var(--brand); text-decoration: underline; }
 @media (max-width: 1024px) { :root { --pad-x: 24px; } .span2 { grid-column: 1 / -1; } .hide-md { display: none; } }
 @media (max-width: 760px) { .login { grid-template-columns: 1fr; } .login-aside { display: none; } }
 @media (max-width: 600px) {
+  .body::before, .hide-sm { display: none; }
   :root { --pad-x: 16px; }
   .nav { position: fixed; left: 0; top: var(--h-shell); width: var(--w-nav-x); transform: translateX(-100%); transition: transform .15s; }
   .nav.x { transform: none; box-shadow: var(--shadow-pop); } .nav a span { display: inline !important; } .nav .nav-group { height: auto !important; padding: 10px 12px 4px !important; font-size: 11px !important; }
@@ -383,7 +409,7 @@ const ICONS = {
   download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
   upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
   cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
-  play: '<path d="m6 3 14 9-14 9V3z"/>', left: '<path d="m15 18-6-6 6-6"/>', right: '<path d="m9 18 6-6-6-6"/>',
+  play: '<path d="m6 3 14 9-14 9V3z"/>', chevron: '<path d="m6 9 6 6 6-6"/>', left: '<path d="m15 18-6-6 6-6"/>', right: '<path d="m9 18 6-6-6-6"/>',
   shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
 };
 const icon = (name, cls = 'i') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -467,7 +493,7 @@ function createSeedData() {
     schema: SCHEMA_VERSION, seededAt: new Date().toISOString(),
     counters: { REQ: 0, TSK: 0, TC: 0, DEF: 0, INC: 0, EX: 0, PR: 10000000, PO: 4500000000, GR: 5000000000, SO: 1000000, DL: 80000000, INV: 90000000, ST: 60000000, TR: 900000, PRJ: 0, ID: 0 },
     settings: { poThreshold: 1000000 * 100, gstBp: 1800, allowSelfApproval: false, negativeStock: false },
-    users: [{ id: 'admin', name: 'Training Administrator', role: 'ADMIN', location: 'Pune', email: LOGIN_ACCOUNT.email },
+    users: [{ id: 'admin', name: 'System Administrator', role: 'ADMIN', location: 'Pune', email: LOGIN_ACCOUNT.email },
       ...TEAM.map(([id, name, role, location]) => ({ id, name, role, location, sample: true }))],
     projects: [{ id: 'PRJ-001', code: 'ABC-S4', name: 'ABC Manufacturing – S/4HANA Implementation', customer: 'ABC Manufacturing', status: 'On Track', sample: true,
       description: 'Sample implementation project: procurement approval workflow, inventory and order-to-cash.',
@@ -539,7 +565,7 @@ function loadData() {
   if (raw) {
     try {
       const parsed = JSON.parse(raw);
-      if (isValidData(parsed)) { state.db = parsed; return 'loaded'; }
+      if (isValidData(parsed)) { state.db = parsed; migrateData(); return 'loaded'; }
     } catch { /* fall through to recovery */ }
     storage.set(`${STORE_KEY}.invalid-backup`, raw);
   }
@@ -547,6 +573,14 @@ function loadData() {
   runSampleScenario();
   saveData();
   return raw ? 'recovered' : 'seeded';
+}
+/** Bring older stored data up to the current wording (no data is removed). */
+function migrateData() {
+  const admin = state.db.users.find((u) => u.id === 'admin');
+  if (admin && admin.name === 'Training Administrator') admin.name = 'System Administrator';
+  for (const a of state.db.activityLog) if (a.summary) a.summary = a.summary.replace('Training Administrator', 'System Administrator').replace(' (simulated)', '');
+  for (const t of state.db.deployments) for (const h of t.history) if (h.note) h.note = h.note.replace(' (simulated)', '');
+  for (const i of state.db.incidents) if (i.description === 'Generated by the monitoring simulator. No real system is connected.') i.description = 'Raised automatically by an alert rule.';
 }
 function exportData() {
   const blob = new Blob([JSON.stringify({ app: APP, exportedAt: nowISO(), data: state.db }, null, 2)], { type: 'application/json' });
@@ -565,6 +599,7 @@ function importData(text) {
   if (!isValidData(data)) throw new SimError('The file is not a Meridian ALM export for this version.');
   if (!data.users.some((u) => u.id === LOGIN_ACCOUNT.userId && u.role === 'ADMIN')) throw new SimError('The import does not contain the administrator account.');
   state.db = data;
+  migrateData();
   if (!userById(state.session.actingAs)) state.session.actingAs = null;
   logActivity('import', 'system', '-', `${realUser().name} imported simulator data`);
   saveData();
@@ -574,7 +609,7 @@ function resetData() {
   runSampleScenario();
   state.session.actingAs = null;
   saveSession();
-  logActivity('reset', 'system', '-', `${realUser().name} reset the simulator to the initial sample data`);
+  logActivity('reset', 'system', '-', `${realUser().name} reset all data to the initial data set`);
   saveData();
 }
 
@@ -1067,8 +1102,8 @@ function promoteTransport(id) {
   const failed = deployGates(t).filter((g) => !g.ok);
   if (failed.length) throw new SimError(`Deployment to ${target} is blocked: ${failed.map((g) => g.label).join('; ')}.`);
   t.env = target;
-  t.history.push({ env: target, by: cur().id, at: stamp(), note: `Imported into ${target === 'QA' ? 'quality assurance' : 'production'} (simulated)` });
-  logActivity('deploy', 'deployment', t.id, `Deployed ${t.id} to ${target} (simulated)`);
+  t.history.push({ env: target, by: cur().id, at: stamp(), note: `Imported into ${target === 'QA' ? 'quality assurance' : 'production'}` });
+  logActivity('deploy', 'deployment', t.id, `Deployed ${t.id} to ${target}`);
   notify([t.createdBy], `Transport ${t.id} deployed to ${target}`, href('deployments'));
   return t;
 }
@@ -1081,18 +1116,18 @@ function createIncident(v, simulated = false) {
     reportedBy: cur().id, createdAt: stamp(), updatedAt: stamp(), notes: [], simulated, resolution: null, resolvedAt: null };
   if (!simulated && state.db.incidents.some((x) => x.reportedBy === i.reportedBy && x.title === i.title && new Date(i.createdAt) - new Date(x.createdAt) < 5000)) throw new SimError('This incident was just submitted. Duplicate submission prevented.');
   state.db.incidents.push(i);
-  logActivity('create', 'incident', i.id, `${simulated ? 'Simulated alert raised' : 'Reported'} incident ${i.id} – ${i.title}`);
+  logActivity('create', 'incident', i.id, `${simulated ? 'Alert raised' : 'Reported'} incident ${i.id} – ${i.title}`);
   notify([i.assigneeId, ...usersWithPerm('incident.manage').filter((u) => userById(u).role === 'BASIS'), 'admin'], `Incident ${i.id} (${i.severity}): ${i.title}`, href('monitoring', i.id));
   return i;
 }
 const ALERTS = [
   ['Order replication queue backlog above 500 messages', 'Integration Hub', 'High'], ['Billing job runtime exceeded 30 minutes', 'Billing Service', 'Medium'],
-  ['Warehouse confirmation interface returned errors', 'Warehouse Interface', 'High'], ['CPU above 90% on application server (simulated)', 'ERP Core', 'Critical'],
+  ['Warehouse confirmation interface returned errors', 'Warehouse Interface', 'High'], ['CPU above 90% on application server', 'ERP Core', 'Critical'],
   ['Nightly sales report failed to refresh', 'Reporting & Analytics', 'Low'], ['Background job for MRP run cancelled', 'ERP Core', 'Medium'],
 ];
 function simulateAlert() {
   const [title, system, severity] = ALERTS[Math.floor(Math.random() * ALERTS.length)];
-  return createIncident({ title, system, severity, description: 'Generated by the monitoring simulator. No real system is connected.' }, true);
+  return createIncident({ title, system, severity, description: 'Raised automatically by an alert rule.' }, true);
 }
 function addIncidentNote(id, body) {
   need('incident.manage');
@@ -1641,7 +1676,7 @@ function runSampleScenario() {
     const i1 = createIncident({ title: 'Order replication delay to the warehouse interface', system: 'Integration Hub', severity: 'High', assigneeId: 'u26',
       description: 'Delivery confirmations are reaching the warehouse interface 20–30 minutes late.' });
     setIncidentStatus(i1.id, 'Investigating');
-    addIncidentNote(i1.id, 'Queue backlog traced to a retry loop for one plant. Monitoring after restart of the adapter (simulated).');
+    addIncidentNote(i1.id, 'Queue backlog traced to a retry loop for one plant. Monitoring after restart of the adapter.');
     const i2 = createIncident({ title: 'Billing job runtime exceeded 30 minutes', system: 'Billing Service', severity: 'Medium', assigneeId: 'u24' });
     setIncidentStatus(i2.id, 'Resolved', 'Job split into two parallel runs; runtime back to 12 minutes.');
   });
@@ -1662,7 +1697,7 @@ const TONE = {
 };
 const badge = (s, inv = false) => `<span class="st ${inv ? 'inv ' : ''}${TONE[s] || 'neu'}">${esc(s)}</span>`;
 const prio = (p) => `<span class="prio ${{ 'Very High': 'vh', High: 'h', Medium: 'm' }[p] || ''}">${esc(p)}</span>`;
-const sampleTag = (r) => (r?.sample ? ' <span class="sample" title="Sample record created with the simulator">Sample</span>' : '');
+const sampleTag = () => '';
 const userLink = (id) => (id ? esc(userName(id)) : '<span class="muted">Unassigned</span>');
 const matLabel = (code) => { const m = material(code); return m ? `<a href="${href('inventory', 'material', code)}">${esc(code)}</a><span class="sub">${esc(m.desc)}</span>` : esc(code); };
 const coLabel = (code) => { const c = company(code); return c ? `<a href="${href('companies', code)}">${esc(c.name)}</a><span class="sub">${esc(code)} · ${esc(c.city)}</span>` : esc(code); };
@@ -1838,17 +1873,9 @@ function runAction(fn, okMsg) {
 /* ── Login, shell bar and side navigation ── */
 function viewLogin() {
   const expired = state.ui.loginNote;
-  return `<div class="login">
-    <aside class="login-aside" aria-hidden="true">
+  return `<main class="signin"><div class="signin-card">
       <span class="brand">${LOGO} Meridian ALM</span>
-      <div><h2>Run implementation projects and day-to-day ERP operations in one workspace.</h2>
-        <ul><li>Requirements, tasks, tests and defects with full traceability</li><li>Procurement with value-based approval</li>
-        <li>Inventory, MRP and plant-to-plant transfers</li><li>Sales order to invoice with GST</li><li>Deployments and monitoring</li></ul></div>
-      <span class="small">Training simulator · runs entirely in this browser</span>
-    </aside>
-    <main class="login-main">
-      <span class="brand">${LOGO} Meridian ALM</span>
-      <h1>Sign in</h1><p class="muted">Use the training account provided by your trainer.</p>
+      <h1>Sign in</h1><p class="muted">Enter your email address and password.</p>
       <form class="login-form" id="login-form" novalidate>
         ${expired ? `<div class="msg info" role="status">${icon('info')}<div>${esc(expired)}</div></div>` : ''}
         <div id="login-err" aria-live="assertive"></div>
@@ -1856,9 +1883,7 @@ function viewLogin() {
         <div class="field"><label for="login-password">Password</label><div class="pw"><input class="input" id="login-password" name="password" type="password" autocomplete="current-password" required aria-required="true" maxlength="128">
           <button type="button" data-action="toggle-password" aria-label="Show password" aria-pressed="false">${icon('eye')}</button></div></div>
         <button type="submit" class="btn em" id="login-submit">Sign in</button>
-      </form>
-      <p class="sim-note">Simulator sign-in: the check runs in this browser and is not server-side security. Data is stored only in this browser (localStorage) and is not shared with other browsers or users.</p>
-    </main></div>`;
+      </form></div></main>`;
 }
 
 const NAV = [
@@ -1881,8 +1906,10 @@ function viewShell() {
   const u = me(), real = realUser(), unread = myNotifications().filter((n) => !n.read).length, pop = state.ui.popover;
   return `<header class="shell">
     <button type="button" class="sbtn" data-action="toggle-nav" aria-label="${navExpanded() ? 'Collapse' : 'Expand'} navigation" aria-expanded="${navExpanded()}" aria-controls="sidenav">${icon('menu')}</button>
-    <a class="brand" href="#/">${LOGO}<span class="shell-title">Meridian ALM</span></a>
-    <span class="sim-tag" title="Training simulator – no external systems are connected">Simulator</span>
+    <button type="button" class="sbtn hide-sm" data-action="back" aria-label="Back">${icon('left')}</button>
+    <a class="brand" href="#/" aria-label="Meridian ALM home">${LOGO}</a>
+    <div style="position:relative;min-width:0"><button type="button" class="shell-app sbtn" data-action="toggle-pop" data-pop="apps" aria-expanded="${pop === 'apps'}" aria-haspopup="menu"><span class="shell-title" style="font-weight:400">${esc(state.route.path === 'home' ? 'Home' : navLabel(state.route.path) || 'Meridian ALM')}</span>${icon('chevron')}</button>
+      ${pop === 'apps' ? `<div class="pop" role="menu" style="left:0;right:auto;max-height:70vh;overflow-y:auto">${NAV.map(([g, items]) => `<div class="pop-h small muted">${esc(g)}</div><div class="menu">${items.filter(([k]) => k !== 'admin' || (realUser().role === 'ADMIN' && !state.session.actingAs)).map(([k, l, ic]) => `<button type="button" role="menuitem" data-action="go" data-href="${k === 'home' ? '#/' : href(k)}">${icon(ic)}${esc(l)}</button>`).join('')}</div>`).join('')}</div>` : ''}</div>
     ${state.session.actingAs ? `<span class="acting" role="status">${icon('swap')}<span class="hide-md">Working as</span> ${esc(u.name)} <button type="button" data-action="stop-work-as">Stop</button></span>` : ''}
     <span class="spacer"></span>
     <div class="search${pop === 'search' ? ' open' : ''}" id="search-box">${icon('search')}
@@ -1967,12 +1994,13 @@ function metrics() {
   };
 }
 function tile(t, s, k, unit, ic, h, tone = '') {
-  return `<a class="tile" href="${h}"><div class="t">${esc(t)}</div><div class="s">${esc(s)}</div><div class="f">${icon(ic)}<div class="right">${k != null ? `<div class="k ${tone}${String(k).length > 6 ? ' long' : ''}">${esc(k)}</div>` : ''}${unit ? `<div class="u">${esc(unit)}</div>` : ''}</div></div></a>`;
+  return `<a class="tile app" href="${h}"><div class="t">${esc(t)}</div><div class="s">${esc(s)}</div><div class="f">${icon(ic)}<div class="right">${k != null ? `<div class="k ${tone}${String(k).length > 6 ? ' long' : ''}">${esc(k)}</div>` : ''}${unit ? `<div class="u">${esc(unit)}</div>` : ''}</div></div></a>`;
 }
 const todo = (t, s, k, h, tone = '') => `<a class="tile todo" href="${h}"><div class="t">${esc(t)}</div><div class="s">${esc(s)}</div><div class="f"><span></span><div class="k ${tone}">${esc(k)}</div></div></a>`;
 
 function viewHome() {
   const u = me(), m = metrics(), st = stockTotals(), d = state.db;
+  const tab = ['home', 'impl', 'ops', 'admin'].includes(state.route.query.tab) ? state.route.query.tab : 'home';
   const todos = [
     m.myTasks.length && todo('My open tasks', `${m.myTasks.filter((t) => isOverdue(t.dueDate)).length} overdue`, m.myTasks.length, withQuery(href('tasks'), { assignee: 'me' }), m.myTasks.some((t) => isOverdue(t.dueDate)) ? 'neg' : ''),
     m.myApprovals.length && todo('Purchase orders to approve', `Above ${moneyShort(d.settings.poThreshold)}`, m.myApprovals.length, withQuery(href('procurement'), { tab: 'po', status: 'Pending Approval' }), 'neg'),
@@ -1983,58 +2011,105 @@ function viewHome() {
     m.unread && todo('Unread notifications', 'Updates on your work', m.unread, '#/notifications'),
   ].filter(Boolean);
   const pr = m.tests.passed + m.tests.failed ? Math.round((m.tests.passed / (m.tests.passed + m.tests.failed)) * 100) : 0;
-  return `<div class="lp"><div class="lp-in">
-    <h2>Welcome, ${esc(u.name)} <small>${esc(ROLES[u.role])} · ${esc(fmtDate(todayISO()))}</small></h2>
-    <h2>My to-dos</h2><div class="tiles">${todos.join('') || '<p class="none">Nothing waiting for you right now.</p>'}</div>
-    <h2>Implementation</h2><div class="tiles">
-      ${tile('Project Overview', 'Status across modules', null, '', 'gauge', '#/overview')}
-      ${tile('Projects', d.projects[0]?.code || 'Projects', d.projects.length, 'projects', 'folder', '#/projects')}
-      ${tile('Business Processes', 'S2P · P2P · L2C', PROCESSES.length, 'processes', 'flow', '#/processes')}
-      ${tile('Requirements', 'Open', m.openReqs.length, `of ${d.requirements.length}`, 'clipboard', '#/requirements')}
-      ${tile('Tasks', 'Overdue', m.overdue.length, 'tasks', 'tasks', withQuery(href('tasks'), { due: 'overdue' }), m.overdue.length ? 'neg' : '')}
-      ${tile('Test Management', 'Pass rate', `${pr}%`, `${d.testCases.length} test cases`, 'test', '#/tests', pr >= 80 ? 'pos' : '')}
-      ${tile('Defects', 'Open', m.openDefects.length, 'defects', 'bug', withQuery(href('defects'), { status: 'open' }), m.openDefects.length ? 'neg' : 'pos')}
-      ${tile('Deployments', 'Transports in QA', d.deployments.filter((x) => x.env === 'QA').length, 'awaiting PROD', 'cloud', '#/deployments')}
-      ${tile('Monitoring', 'Open incidents', m.openInc.length, 'simulated', 'activity', '#/monitoring', m.openInc.length ? 'neg' : 'pos')}
-    </div>
-    <h2>Operations</h2><div class="tiles">
-      ${tile('Procurement', 'Pending approval', m.pendingPO.length, 'purchase orders', 'cart', withQuery(href('procurement'), { tab: 'po', status: 'Pending Approval' }), m.pendingPO.length ? 'neg' : '')}
-      ${tile('Inventory', 'Stock value', moneyShort(st.value), `${num(st.units)} units`, 'box', '#/inventory')}
-      ${tile('MRP', 'Planning run', null, 'Shortages by plant', 'calendar', '#/mrp')}
-      ${tile('Sales', 'Open orders', m.openSO.length, moneyShort(m.revenue) + ' invoiced', 'truck', '#/sales')}
-      ${tile('Companies', 'Customers & vendors', d.companies.length, 'business partners', 'building', '#/companies')}
-    </div>
-    <h2>Administration</h2><div class="tiles">
-      ${tile('Team & Activity', 'Members', d.users.length, 'users', 'users', '#/team')}
-      ${tile('Notifications', 'Unread', m.unread, '', 'bell', '#/notifications')}
-      ${tile('My Account', u.name, null, '', 'user', '#/account')}
-      ${realUser().role === 'ADMIN' && !state.session.actingAs ? tile('Administration', 'Settings & data', null, 'Export / import / reset', 'settings', '#/admin') : ''}
-    </div></div></div>`;
+  const impl = [
+    tile('Overview', 'Project status', null, '', 'gauge', '#/overview'),
+    tile('Projects and Setup', d.projects[0]?.code || '', d.projects.length, 'projects', 'folder', '#/projects'),
+    tile('Processes', 'S2P · P2P · L2C', PROCESSES.length, '', 'flow', '#/processes'),
+    tile('Requirements', 'Open', m.openReqs.length, `of ${d.requirements.length}`, 'clipboard', '#/requirements'),
+    tile('Tasks', 'Overdue', m.overdue.length, '', 'tasks', withQuery(href('tasks'), { due: 'overdue' }), m.overdue.length ? 'neg' : ''),
+    tile('Test Execution', 'Pass rate', `${pr}%`, `${d.testCases.length} test cases`, 'test', '#/tests', pr >= 80 ? 'pos' : ''),
+    tile('Defects', 'Open', m.openDefects.length, '', 'bug', withQuery(href('defects'), { status: 'open' }), m.openDefects.length ? 'neg' : 'pos'),
+    tile('Deployments', 'In QA', d.deployments.filter((x) => x.env === 'QA').length, '', 'cloud', '#/deployments'),
+    tile('Monitoring', 'Open incidents', m.openInc.length, '', 'activity', '#/monitoring', m.openInc.length ? 'neg' : 'pos'),
+  ];
+  const ops = [
+    tile('Procurement', 'Pending approval', m.pendingPO.length, 'purchase orders', 'cart', withQuery(href('procurement'), { tab: 'po', status: 'Pending Approval' }), m.pendingPO.length ? 'neg' : ''),
+    tile('Inventory', 'Stock value', moneyShort(st.value), `${num(st.units)} units`, 'box', '#/inventory'),
+    tile('MRP', 'Planning run', null, '', 'calendar', '#/mrp'),
+    tile('Sales', 'Open orders', m.openSO.length, `${moneyShort(m.revenue)} invoiced`, 'truck', '#/sales'),
+    tile('Companies', 'Customers & vendors', d.companies.length, '', 'building', '#/companies'),
+  ];
+  const admin = [
+    tile('Team & Activity', 'Members', d.users.length, '', 'users', '#/team'),
+    tile('Notifications', 'Unread', m.unread, '', 'bell', '#/notifications'),
+    tile('My Account', u.name, null, '', 'user', '#/account'),
+    realUser().role === 'ADMIN' && !state.session.actingAs ? tile('Administration', 'Settings & data', null, '', 'settings', '#/admin') : '',
+  ];
+  const sections = {
+    home: `<h2>My To-Dos</h2><div class="tiles">${todos.join('') || '<p class="none">Nothing waiting for you right now.</p>'}</div><h2>Frequently Used</h2><div class="tiles">${impl.slice(0, 6).join('')}${ops[0]}${ops[3]}</div>`,
+    impl: `<div class="tiles">${impl.join('')}</div>`, ops: `<div class="tiles">${ops.join('')}</div>`, admin: `<div class="tiles">${admin.join('')}</div>`,
+  };
+  return `<div class="lp"><nav class="lp-tabs" role="tablist" aria-label="Spaces">${[['home', 'My Home'], ['impl', 'Implementation'], ['ops', 'Operations'], ['admin', 'Administration']]
+    .map(([k, l]) => `<a role="tab" aria-selected="${k === tab}" href="#/?tab=${k}">${esc(l)}</a>`).join('')}</nav><div class="lp-in">${sections[tab]}</div></div>`;
 }
 
+const C = { grey: 'var(--c-grey)', red: 'var(--c-bad)', orange: 'var(--c-warn)', green: 'var(--c-good)', blue: 'var(--c1)' };
+function hstack(rows) {
+  const max = Math.max(1, ...rows.map((r) => r.parts.reduce((s, p) => s + p.value, 0)));
+  return rows.map((r) => { const tot = r.parts.reduce((s, p) => s + p.value, 0);
+    return `<a class="hbar" href="${r.href}"><span class="lab" title="${esc(r.label)}">${esc(r.label)}</span><span class="trk"><span style="display:flex;height:100%;width:${(tot / max) * 100}%">${r.parts.filter((p) => p.value).map((p) => `<span title="${esc(p.label)}: ${p.value}" style="flex:${p.value} 1 0;background:${p.color};color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;overflow:hidden">${p.value}</span>`).join('')}</span></span><span>${tot}</span></a>`; }).join('');
+}
 function viewOverview() {
-  const d = state.db, m = metrics(), st = stockTotals(), p = d.projects[0];
-  const reqData = REQ_STATUSES.map((s, i) => ({ label: s, value: d.requirements.filter((r) => r.status === s).length, color: ['var(--c1)', 'var(--c6)', 'var(--c2)', 'var(--c5)', 'var(--c-good)', 'var(--c-bad)'][i] }));
-  const sevData = SEVERITIES.map((s, i) => ({ label: s, value: m.openDefects.filter((x) => x.severity === s).length, color: ['var(--c-bad)', 'var(--c-warn)', 'var(--c1)', 'var(--c-grey)'][i], href: withQuery(href('defects'), { status: 'open', severity: s }) }));
-  const exec = m.tests.passed + m.tests.failed;
-  const soStages = ['Open', 'In Delivery', 'Delivered', 'Invoiced'].map((s) => ({ label: s, value: d.salesOrders.filter((x) => x.status === s).length }));
-  const body = `<div class="grid dash">
-    ${card({ title: 'Requirements by status', link: '#/requirements', count: plural(d.requirements.length, 'requirement'), body: stackBar(reqData, 'Requirements by status') })}
-    ${card({ title: 'Test execution', link: '#/tests', count: `${exec ? Math.round((m.tests.passed / exec) * 100) : 0}% pass rate`, body: donut([{ label: 'Passed', value: m.tests.passed, color: 'var(--c-good)' }, { label: 'Failed', value: m.tests.failed, color: 'var(--c-bad)' }, { label: 'Not run', value: m.tests.notRun, color: 'var(--c-grey)' }], `${d.testCases.length}`, 'Test cases by result') })}
-    ${card({ title: 'Open defects by severity', link: withQuery(href('defects'), { status: 'open' }), count: plural(m.openDefects.length, 'open defect'), body: hbars(sevData) })}
-    ${card({ title: 'My tasks', link: withQuery(href('tasks'), { assignee: 'me' }), count: `${m.myTasks.length} open`, flush: true, body: m.myTasks.length ? m.myTasks.slice(0, 5).map((t) => `<a class="lrow ind ${isOverdue(t.dueDate) ? 'neg' : ''}" href="${href('tasks', t.id)}"><span>${esc(t.title)}<span class="sub small muted" style="display:block">${esc(t.id)} · due ${esc(fmtDate(t.dueDate))}</span></span><span class="v">${badge(t.status)}</span></a>`).join('') : empty('No open tasks assigned to you') })}
-    ${card({ title: 'Procurement', link: '#/procurement', flush: true, body: `
-      <a class="lrow ind ${m.pendingPO.length ? 'crit' : ''}" href="${withQuery(href('procurement'), { tab: 'po', status: 'Pending Approval' })}">POs pending approval<span class="v ${m.pendingPO.length ? 'crit' : ''}">${m.pendingPO.length}</span></a>
-      <a class="lrow" href="${withQuery(href('procurement'), { tab: 'po' })}">Open PO value<span class="v">${esc(moneyShort(m.openPOValue))}</span></a>
-      <a class="lrow" href="${withQuery(href('procurement'), { tab: 'pr', status: 'Open' })}">Open requisitions<span class="v">${d.purchaseRequisitions.filter((x) => x.status === 'Open').length}</span></a>
-      <div class="lrow small muted">Approval required above ${esc(money(d.settings.poThreshold))}</div>` })}
-    ${card({ title: 'Sales pipeline', link: '#/sales', count: `${esc(moneyShort(m.revenue))} invoiced (net)`, body: columns(soStages, { label: 'Sales orders by status' }) })}
-    ${card({ title: 'Inventory', link: '#/inventory', count: `${num(st.units)} units`, body: `<div class="row between"><div><div class="kpi">${esc(moneyShort(st.value))}</div><div class="muted small">Stock value at cost</div></div><a href="${withQuery(href('inventory'), { low: 'yes' })}"><div class="kpi neg">${num(st.low)}</div><div class="muted small">Below reorder point</div></a></div><div style="margin-top:12px">${hbars(PLANTS.map((pl) => ({ label: pl.name, value: st.byPlant[pl.code] || 0, href: withQuery(href('inventory'), { plant: pl.code }) })), { fmt: moneyShort })}</div>` })}
-    ${card({ title: 'Incidents', link: '#/monitoring', count: `${m.openInc.length} open`, flush: true, body: m.openInc.length ? m.openInc.slice(0, 5).map((i) => `<a class="lrow ind ${i.severity === 'Critical' || i.severity === 'High' ? 'neg' : 'crit'}" href="${href('monitoring', i.id)}"><span>${esc(i.title)}<span class="small muted" style="display:block">${esc(i.id)} · ${esc(i.system)}</span></span><span class="v">${badge(i.status)}</span></a>`).join('') : empty('No open incidents') })}
-    ${p ? card({ title: esc(p.name), link: href('projects', p.id), sub: `Current phase: ${esc(currentPhase(p))}`, body: phaseStages(p) + `<div class="muted small" style="margin-top:10px">${esc(fmtDate(p.phases[0].start))} – ${esc(fmtDate(p.phases[p.phases.length - 1].end))}</div>` }) : ''}
-    ${card({ title: 'Recent activity', link: withQuery(href('team'), { tab: 'activity' }), body: activityList(d.activityLog.slice(0, 7)) })}
+  const d = state.db;
+  const L = listState('ov', { variant: 'Standard', project: d.projects[0]?.id || '', scope: '', assigned: 'all' });
+  const reqs = d.requirements.filter((r) => (!L.project || r.projectId === L.project) && (!L.scope || r.process === L.scope));
+  const ids = new Set(reqs.map((r) => r.id));
+  const tasks = d.tasks.filter((t) => (t.requirementId ? ids.has(t.requirementId) : !L.scope));
+  const tcs = d.testCases.filter((t) => (t.requirementId ? ids.has(t.requirementId) : !L.scope));
+  const p = d.projects.find((x) => x.id === L.project) || d.projects[0];
+  const cnt = (s) => tasks.filter((t) => t.status === s).length;
+  const header = `<div class="ph"><div class="ph-in"><div class="ph-row"><label class="sr-only" for="f-ov-variant">View</label>
+      <select id="f-ov-variant" class="variant select" style="width:auto;height:auto;border:0;padding-right:28px;background-position:right 4px center" data-filter="ov" name="variant">${opts(['Standard', 'Operations'], L.variant)}</select>
+      <div class="ov-links"><a href="#/projects">Manage Projects</a><a href="#/tasks">Manage Tasks</a></div></div>
+    ${L.variant === 'Standard' ? `<div class="ov-filters"><div class="field"><label for="f-ov-project">Project:</label><select class="select" id="f-ov-project" data-filter="ov" name="project">${opts(d.projects.map((x) => [x.id, x.name]), L.project)}</select></div>
+      <div class="field"><label for="f-ov-scope">Scope:</label><select class="select" id="f-ov-scope" data-filter="ov" name="scope">${opts(PROCESSES.map((x) => [x.code, `${x.code} – ${x.name}`]), L.scope, { blank: '' })}</select></div></div>` : ''}</div></div>`;
+  if (L.variant === 'Operations') return header + `<div class="content">${opsCards()}</div>`;
+
+  const today = todayISO(), end = p ? p.phases.find((ph) => ph.name === currentPhase(p))?.end : null;
+  const remaining = end ? Math.round((new Date(`${end}T00:00:00`) - new Date(`${today}T00:00:00`)) / 86400000) : null;
+  const uid = me().id, myRole = me().role;
+  const open = tasks.filter((t) => t.status !== 'Done');
+  const mine = open.filter((t) => t.assigneeId === uid), roles = open.filter((t) => userById(t.assigneeId)?.role === myRole || t.assigneeId === uid);
+  const upcoming = (L.assigned === 'me' ? mine : open).slice().sort((a, b) => (a.dueDate || '9999').localeCompare(b.dueDate || '9999')).slice(0, 5);
+  const ws = [...PROCESSES.map((x) => [x.code, x.name]), ['', '(No Workstream Assigned)']];
+  const reqWs = (code) => (code ? reqs.filter((r) => r.process === code) : []);
+  const taskWs = (code) => tasks.filter((t) => { const r = d.requirements.find((x) => x.id === t.requirementId); return code ? r?.process === code : !r; });
+  const failedRuns = tcs.filter((t) => t.status === 'Failed').length;
+  const body = `<div class="ovgrid">
+    ${card({ title: 'Project', body: `<div class="lbl" style="margin-bottom:10px">Overall Task Progress:</div>${stackBar([{ label: 'Open', value: cnt('Open') + cnt('Blocked'), color: C.grey }, { label: 'In Progress', value: cnt('In Progress'), color: C.orange }, { label: 'Done', value: cnt('Done'), color: C.green }], 'Overall task progress')}
+      <div class="row between" style="margin-top:22px"><span class="lbl">Current Phase:</span><a href="${p ? href('projects', p.id) : '#/projects'}" style="font-size:20px">${esc(p ? currentPhase(p) : '—')}</a></div>
+      <div class="right" style="margin-top:14px"><span class="lbl">Ends on</span> ${esc(fmtDate(end))}</div><div class="right" style="margin-top:8px"><span class="lbl">Remaining</span> <span class="${remaining < 0 ? 'st neg' : ''}">${remaining ?? '—'}</span> <span class="lbl">Days</span></div>` })}
+    ${card({ title: 'Today', flush: true, body: `
+      <a class="lrow ind neg" href="${withQuery(href('tests'), { status: 'Failed' })}">Failed Test Runs<span class="v neg">${failedRuns}</span></a>
+      <a class="lrow ind neg" href="${withQuery(href('tasks'), { status: 'Blocked' })}">Blocked Tasks<span class="v neg">${cnt('Blocked')}</span></a>
+      <a class="lrow ind warn" href="${withQuery(href('tasks'), { due: 'overdue' })}">Overdue Tasks<span class="v warn">${tasks.filter((t) => isOverdue(t.dueDate, t.status === 'Done')).length}</span></a>
+      <a class="lrow ind" href="${withQuery(href('tasks'), { assignee: 'none', status: 'open' })}">Unassigned Tasks<span class="v">${open.filter((t) => !t.assigneeId).length}</span></a>` })}
+    ${card({ title: 'Upcoming Tasks', cls: 'wide', flush: true, body: `<div class="cb" style="padding-bottom:0"><div class="bignum"><a href="${withQuery(href('tasks'), { assignee: 'me', status: 'open' })}" style="color:inherit"><b>${mine.length}</b><span>Assigned to Me</span></a><a href="${withQuery(href('tasks'), { status: 'open' })}" style="color:inherit"><b>${roles.length}</b><span>Assigned to My Roles</span></a><a href="#/tasks"><span style="margin:0;color:var(--brand);display:block">${tasks.length}</span>All Tasks</a></div>
+      <div class="row" style="padding-bottom:10px"><label for="f-ov-assigned" class="lbl">Assigned to:</label><select class="select" id="f-ov-assigned" data-filter="ov" name="assigned" style="width:130px">${opts([['all', 'All'], ['me', 'Me']], L.assigned)}</select></div></div>
+      ${upcoming.map((t) => `<a class="lrow" href="${href('tasks', t.id)}"><span style="color:var(--brand);flex:1;min-width:0">${esc(t.title)}</span><span class="${isOverdue(t.dueDate) ? 'due-late' : ''}" style="width:120px">${esc(fmtDate(t.dueDate))}</span><span style="width:84px;text-align:right">${esc(t.status)}</span></a>`).join('') || empty('No open tasks')}` })}
+    ${card({ title: 'Tasks', sub: 'By Statuses', body: columns([['Open', C.grey], ['Blocked', C.red], ['In Progress', C.orange], ['Done', C.green]].map(([s, c]) => ({ label: s, value: cnt(s), color: c })), { label: 'Tasks by status' }) })}
+    ${card({ title: 'Task Statuses per Workstream', count: `${ws.length} of ${ws.length}`, body: hstack(ws.map(([code, name]) => { const t = taskWs(code); return { label: name, href: withQuery(href('tasks'), {}), parts: [{ label: 'Done', value: t.filter((x) => x.status === 'Done').length, color: C.green }, { label: 'In Progress', value: t.filter((x) => x.status === 'In Progress').length, color: C.orange }, { label: 'Open', value: t.filter((x) => ['Open', 'Blocked'].includes(x.status)).length, color: C.grey }] }; })) + legend([{ label: 'Done', value: cnt('Done'), color: C.green }, { label: 'In Progress', value: cnt('In Progress'), color: C.orange }, { label: 'Open', value: cnt('Open') + cnt('Blocked'), color: C.grey }]) })}
+    ${card({ title: 'Requirements per Workstream', count: `${PROCESSES.length} of ${PROCESSES.length}`, body: hbars(PROCESSES.map((x) => ({ label: x.name, value: reqWs(x.code).length, href: withQuery(href('requirements'), { process: x.code }) }))) })}
+    ${card({ title: 'Requirement Statuses', body: hbars(REQ_STATUSES.map((s) => ({ label: s, value: reqs.filter((r) => r.status === s).length, color: s === 'Approved' ? C.green : s === 'Rejected' ? C.red : C.orange, href: withQuery(href('requirements'), { status: s }) }))) })}
+    ${card({ title: 'Defects by Severity', body: donut(SEVERITIES.map((s, i) => ({ label: s, value: d.defects.filter((x) => ids.has(x.requirementId) && OPEN_DEFECT.includes(x.status) && x.severity === s).length, color: [C.red, C.orange, C.blue, C.grey][i] })), String(d.defects.filter((x) => ids.has(x.requirementId) && OPEN_DEFECT.includes(x.status)).length), 'Open defects by severity') })}
+    ${card({ title: 'Test Execution', sub: 'All Types', body: columns([{ label: 'Initial', value: tcs.filter((t) => !['Passed', 'Failed'].includes(t.status)).length, color: C.grey }, { label: 'Failed', value: failedRuns, color: C.red }, { label: 'Passed', value: tcs.filter((t) => t.status === 'Passed').length, color: C.green }], { label: 'Test execution' }) })}
+    ${card({ title: 'Recent Activity', cls: 'wide', body: activityList(d.activityLog.slice(0, 6)) })}
   </div>`;
-  return page({ title: 'Project Overview', sub: 'Live figures calculated from the records in this simulator', body });
+  return header + `<div class="content">${body}</div>`;
+}
+function opsCards() {
+  const d = state.db, m = metrics(), st = stockTotals();
+  const soStages = ['Open', 'In Delivery', 'Delivered', 'Invoiced'].map((s) => ({ label: s, value: d.salesOrders.filter((x) => x.status === s).length }));
+  return `<div class="ovgrid">
+    ${card({ title: 'Procurement', link: '#/procurement', flush: true, body: `
+      <a class="lrow ind ${m.pendingPO.length ? 'warn' : ''}" href="${withQuery(href('procurement'), { tab: 'po', status: 'Pending Approval' })}">POs Pending Approval<span class="v ${m.pendingPO.length ? 'warn' : ''}">${m.pendingPO.length}</span></a>
+      <a class="lrow" href="${withQuery(href('procurement'), { tab: 'po' })}">Open PO Value<span class="v">${esc(moneyShort(m.openPOValue))}</span></a>
+      <a class="lrow" href="${withQuery(href('procurement'), { tab: 'pr', status: 'Open' })}">Open Requisitions<span class="v">${d.purchaseRequisitions.filter((x) => x.status === 'Open').length}</span></a>
+      <div class="lrow small muted">Approval required above ${esc(money(d.settings.poThreshold))}</div>` })}
+    ${card({ title: 'Sales Pipeline', link: '#/sales', count: `${esc(moneyShort(m.revenue))} invoiced (net)`, body: columns(soStages, { label: 'Sales orders by status' }) })}
+    ${card({ title: 'Inventory', link: '#/inventory', count: `${num(st.units)} units`, body: `<div class="row between"><div><div class="kpi">${esc(moneyShort(st.value))}</div><div class="muted small">Stock value at cost</div></div><a href="${withQuery(href('inventory'), { low: 'yes' })}"><div class="kpi neg">${num(st.low)}</div><div class="muted small">Below reorder point</div></a></div><div style="margin-top:12px">${hbars(PLANTS.map((pl) => ({ label: pl.name, value: st.byPlant[pl.code] || 0, href: withQuery(href('inventory'), { plant: pl.code }) })), { fmt: moneyShort })}</div>` })}
+    ${card({ title: 'Incidents', link: '#/monitoring', count: `${m.openInc.length} open`, flush: true, body: m.openInc.length ? m.openInc.slice(0, 5).map((i) => `<a class="lrow ind ${i.severity === 'Critical' || i.severity === 'High' ? 'neg' : 'warn'}" href="${href('monitoring', i.id)}"><span>${esc(i.title)}<span class="small muted" style="display:block">${esc(i.id)} · ${esc(i.system)}</span></span><span class="v">${badge(i.status)}</span></a>`).join('') : empty('No open incidents') })}
+  </div>`;
 }
 function phaseStages(p) {
   const cur = currentPhase(p), idx = p.phases.findIndex((ph) => ph.name === cur);
@@ -2061,13 +2136,17 @@ function viewProjects() {
   const id = state.route.parts[1];
   if (id) return viewProject(id);
   const d = state.db;
-  const body = `<div class="grid">${d.projects.map((p) => {
-    const reqs = d.requirements.filter((r) => r.projectId === p.id), done = reqs.filter((r) => r.status === 'Approved').length;
-    return `<a class="card card-link" href="${href('projects', p.id)}"><div class="ch"><div><h2>${esc(p.name)}</h2><div class="sub">${esc(p.code)}${p.customer ? ` · ${esc(p.customer)}` : ''}</div></div><span class="count">${badge(p.status)}</span></div>
-      <div class="cb stack" style="gap:10px">${phaseStages(p)}<div class="row between small"><span>${num(reqs.length)} requirements · ${num(done)} signed off</span><span class="muted">${esc(currentPhase(p))}</span></div>
-      <div class="progress" role="progressbar" aria-label="Requirements signed off" aria-valuenow="${reqs.length ? Math.round((done / reqs.length) * 100) : 0}" aria-valuemin="0" aria-valuemax="100"><span style="width:${reqs.length ? (done / reqs.length) * 100 : 0}%"></span></div></div></a>`;
-  }).join('')}</div>`;
-  return page({ crumbs: [['Projects']], title: 'Projects', sub: plural(d.projects.length, 'project'), actions: permBtn('project.manage', 'Create project', 'new-project', { cls: 'em', ic: 'plus' }), body });
+  const L = listState('prj', { q: '', status: '' });
+  const rows = d.projects.filter((p) => matches(L.q, p.code, p.name, p.customer) && (!L.status || p.status === L.status));
+  const body = `<div class="card">${table('prj', [
+    { label: 'Project', render: (p) => `<a href="${href('projects', p.id)}">${esc(p.name)}</a><span class="sub">${esc(p.code)}</span>` },
+    { label: 'Customer', render: (p) => esc(p.customer || '—') }, { label: 'Current Phase', render: (p) => esc(currentPhase(p)) },
+    { label: 'Start', render: (p) => esc(fmtDate(p.phases[0].start)) }, { label: 'End', render: (p) => esc(fmtDate(p.phases[p.phases.length - 1].end)) },
+    { label: 'Requirements', num: true, render: (p) => num(d.requirements.filter((r) => r.projectId === p.id).length) },
+    { label: 'Signed Off', render: (p) => { const r = d.requirements.filter((x) => x.projectId === p.id), done = r.filter((x) => x.status === 'Approved').length, pct = r.length ? Math.round((done / r.length) * 100) : 0;
+      return `<div class="progress" style="width:120px" role="progressbar" aria-label="Requirements signed off" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div><span class="sub">${pct}%</span>`; } },
+    { label: 'Status', render: (p) => badge(p.status) }], rows, { link: (p) => href('projects', p.id), caption: 'Projects' })}</div>`;
+  return page({ crumbs: [['Projects']], title: 'Projects and Setup', sub: plural(d.projects.length, 'project'), filters: fSearch('prj', L.q, 'Code, name or customer') + fSelect('prj', 'status', 'Status', L.status, PROJECT_STATUSES), actions: permBtn('project.manage', 'Create project', 'new-project', { cls: 'em', ic: 'plus' }), body });
 }
 function viewProject(id) {
   const p = state.db.projects.find((x) => x.id === id);
@@ -2092,12 +2171,12 @@ function viewProcesses() {
   const body = `<div class="stack">${PROCESSES.map((p) => {
     const reqs = d.requirements.filter((r) => r.process === p.code);
     return card({ title: `${esc(p.code)} – ${esc(p.name)}`, sub: esc(p.desc), count: `<a href="${withQuery(href('requirements'), { process: p.code })}">${plural(reqs.length, 'requirement')}</a>`, body: `<div class="flow">${p.steps.map(([name, rec]) => {
-      if (!rec) return `<span class="step off">${esc(name)}<b>Not simulated</b></span>`;
+      if (!rec) return `<span class="step off">${esc(name)}<b>External</b></span>`;
       const n = rec === 'requirement' ? reqs.length : counts[rec];
       return `<a class="step has" href="${links[rec]}">${esc(name)}<b>${n == null ? 'Open' : num(n)}</b></a>`;
     }).join('')}</div>` });
   }).join('')}</div>`;
-  return page({ crumbs: [['Processes']], title: 'Business Processes', sub: 'End-to-end flows with live document counts. Steps marked “Not simulated” are shown for orientation only.', body });
+  return page({ crumbs: [['Processes']], title: 'Business Processes', sub: 'End-to-end flows with live document counts. Steps marked “External” are handled outside this application.', body });
 }
 
 /* ── Requirements ── */
@@ -2163,7 +2242,7 @@ function viewTasks() {
   const L = listState('task', { q: '', status: '', assignee: '', due: '' });
   const uid = me().id;
   const rows = state.db.tasks.filter((t) => matches(L.q, t.id, t.title, t.requirementId) && (!L.status || t.status === L.status || (L.status === 'open' && t.status !== 'Done'))
-    && (!L.assignee || t.assigneeId === (L.assignee === 'me' ? uid : L.assignee)) && (!L.due || (L.due === 'overdue' && isOverdue(t.dueDate, t.status === 'Done')))).slice().reverse();
+    && (!L.assignee || (L.assignee === 'none' ? !t.assigneeId : t.assigneeId === (L.assignee === 'me' ? uid : L.assignee))) && (!L.due || (L.due === 'overdue' && isOverdue(t.dueDate, t.status === 'Done')))).slice().reverse();
   const cols = [
     { label: 'ID', render: (t) => `<a href="${href('tasks', t.id)}">${esc(t.id)}</a>` },
     { label: 'Title', render: (t) => `${esc(t.title)}${sampleTag(t)}${t.requirementId ? `<span class="sub">${esc(t.requirementId)}</span>` : ''}` },
@@ -2172,7 +2251,7 @@ function viewTasks() {
     { label: 'Status', render: (t) => (can('task.edit') ? `<label class="sr-only" for="ts-${esc(t.id)}">Status of ${esc(t.id)}</label><select class="select sm" id="ts-${esc(t.id)}" data-change="task-status" data-id="${esc(t.id)}" style="width:130px">${opts([t.status, ...TASK_NEXT[t.status]], t.status)}</select>` : badge(t.status)) },
   ];
   return page({ crumbs: [['Tasks']], title: 'Tasks', sub: `${num(rows.length)} of ${num(state.db.tasks.length)}`, actions: permBtn('task.create', 'Create task', 'new-task', { cls: 'em', ic: 'plus' }),
-    filters: fSearch('task', L.q, 'ID, title or requirement') + fSelect('task', 'status', 'Status', L.status, [['open', 'All open'], ...TASK_STATUSES]) + fSelect('task', 'assignee', 'Assignee', L.assignee, [['me', 'Me'], ...state.db.users.map((u) => [u.id, u.name])])
+    filters: fSearch('task', L.q, 'ID, title or requirement') + fSelect('task', 'status', 'Status', L.status, [['open', 'All open'], ...TASK_STATUSES]) + fSelect('task', 'assignee', 'Assignee', L.assignee, [['me', 'Me'], ['none', 'Unassigned'], ...state.db.users.map((u) => [u.id, u.name])])
       + fSelect('task', 'due', 'Due', L.due, [['overdue', 'Overdue']]),
     body: `<div class="card">${table('task', cols, rows, { link: (t) => href('tasks', t.id), caption: 'Tasks' })}</div>` });
 }
@@ -2310,9 +2389,9 @@ function viewDeployments() {
     }).join('') || empty('No transports') });
   };
   const hist = d.deployments.flatMap((t) => t.history.map((h) => ({ ...h, id: t.id, title: t.title }))).sort((a, b) => b.at.localeCompare(a.at));
-  const body = `<div class="msg info">${icon('info')}<div>Deployments are simulated workflow records. Gates: DEV → QA needs the requirement in realization and test cases; QA → PROD needs sign-off, all tests passed and no open defects.</div></div>
+  const body = `<div class="msg info">${icon('info')}<div>Deployment gates: DEV → QA needs the requirement in realization and test cases; QA → PROD needs sign-off, all tests passed and no open defects.</div></div>
     <div class="grid">${ENVS.map(colFor).join('')}</div><div style="margin-top:16px">${card({ title: 'Deployment log', flush: true, body: simpleTable([{ label: 'Date', render: (h) => esc(fmtDT(h.at)) }, { label: 'Transport', render: (h) => esc(h.id) }, { label: 'Description', render: (h) => esc(h.title) }, { label: 'System', render: (h) => badge(h.env) }, { label: 'By', render: (h) => esc(userName(h.by)) }, { label: 'Note', render: (h) => esc(h.note) }], hist.slice(0, 30)) })}</div>`;
-  return page({ crumbs: [['Deployments']], title: 'Deployments', sub: 'DEV → QA → PROD transport pipeline (simulated)', actions: permBtn('deploy.qa', 'Create transport', 'new-transport', { cls: 'em', ic: 'plus' }), body });
+  return page({ crumbs: [['Deployments']], title: 'Deployments', sub: 'DEV → QA → PROD transport pipeline', actions: permBtn('deploy.qa', 'Create transport', 'new-transport', { cls: 'em', ic: 'plus' }), body });
 }
 
 /* ── Monitoring ── */
@@ -2327,14 +2406,14 @@ function viewMonitoring() {
     return { s, open, worst, avail };
   });
   const rows = d.incidents.filter((i) => matches(L.q, i.id, i.title, i.system) && (!L.status || i.status === L.status || (L.status === 'open' && i.status !== 'Resolved')) && (!L.severity || i.severity === L.severity)).slice().reverse();
-  const body = `<div class="msg info">${icon('info')}<div>Monitoring is simulated: health indicators are derived from the open incidents in this simulator. No real system is connected.</div></div>
-    <div class="grid dash">${health.map((h) => card({ title: esc(h.s), body: `<div class="row between"><span class="st ${{ Operational: 'pos', Warning: 'info', Degraded: 'crit', Down: 'neg' }[h.worst]}">${esc(h.worst)}</span><span class="kpi ${h.avail < 98 ? 'neg' : 'pos'}" style="font-size:26px">${h.avail.toFixed(1)}%</span></div><div class="small muted">Simulated availability · ${plural(h.open.length, 'open incident')}</div>` })).join('')}</div>
+  const body = `<div class="msg info">${icon('info')}<div>Health indicators are calculated from the open incidents of each system.</div></div>
+    <div class="grid dash">${health.map((h) => card({ title: esc(h.s), body: `<div class="row between"><span class="st ${{ Operational: 'pos', Warning: 'info', Degraded: 'crit', Down: 'neg' }[h.worst]}">${esc(h.worst)}</span><span class="kpi ${h.avail < 98 ? 'neg' : 'pos'}" style="font-size:26px">${h.avail.toFixed(1)}%</span></div><div class="small muted">Availability · ${plural(h.open.length, 'open incident')}</div>` })).join('')}</div>
     <div class="card" style="margin-top:16px">${table('inc', [
-      { label: 'ID', render: (i) => `<a href="${href('monitoring', i.id)}">${esc(i.id)}</a>` }, { label: 'Title', render: (i) => `${esc(i.title)}${sampleTag(i)}${i.simulated ? '<span class="sub">Simulated alert</span>' : ''}` },
+      { label: 'ID', render: (i) => `<a href="${href('monitoring', i.id)}">${esc(i.id)}</a>` }, { label: 'Title', render: (i) => `${esc(i.title)}${sampleTag(i)}${i.simulated ? '<span class="sub">Raised by alert rule</span>' : ''}` },
       { label: 'System', render: (i) => esc(i.system) }, { label: 'Severity', render: (i) => badge(i.severity) }, { label: 'Status', render: (i) => badge(i.status) },
       { label: 'Assignee', render: (i) => userLink(i.assigneeId) }, { label: 'Opened', render: (i) => esc(fmtDT(i.createdAt)) }], rows, { link: (i) => href('monitoring', i.id), caption: 'Incidents' })}</div>`;
   return page({ crumbs: [['Monitoring']], title: 'Monitoring & Incidents', sub: `${d.incidents.filter((i) => i.status !== 'Resolved').length} open incidents`,
-    actions: btn('Simulate alert', 'simulate-alert', { ic: 'alert' }) + btn('Report incident', 'new-incident', { cls: 'em', ic: 'plus' }),
+    actions: btn('Raise test alert', 'simulate-alert', { ic: 'alert' }) + btn('Report incident', 'new-incident', { cls: 'em', ic: 'plus' }),
     filters: fSearch('inc', L.q, 'ID, title or system') + fSelect('inc', 'status', 'Status', L.status, [['open', 'All open'], ...INC_STATUSES]) + fSelect('inc', 'severity', 'Severity', L.severity, SEVERITIES), body });
 }
 function dlgIncident() {
@@ -2356,7 +2435,7 @@ function viewIncident(id) {
       ${can('incident.manage') ? `<form data-form="inc-note" data-id="${esc(i.id)}" class="stack" style="gap:8px;margin-top:8px" novalidate><label class="sr-only" for="note-${esc(i.id)}">Add note</label><textarea class="textarea" id="note-${esc(i.id)}" name="text" maxlength="2000" placeholder="Add an investigation note"></textarea><div><button class="btn" type="submit">Add note</button></div></form>` : ''}` })}
     ${historyCard('incident', i.id)}</div>`;
   return page({ crumbs: [['Monitoring', '#/monitoring'], [i.id]], title: `${esc(i.id)} · ${esc(i.title)}${sampleTag(i)}`, actions: acts,
-    attrs: [['Status', badge(i.status)], ['Severity', badge(i.severity)], ['System', esc(i.system)], ['Assignee', userLink(i.assigneeId)], ['Reported', `${esc(fmtDT(i.createdAt))} by ${esc(userName(i.reportedBy))}`], i.simulated && ['Source', 'Simulated alert']], body });
+    attrs: [['Status', badge(i.status)], ['Severity', badge(i.severity)], ['System', esc(i.system)], ['Assignee', userLink(i.assigneeId)], ['Reported', `${esc(fmtDT(i.createdAt))} by ${esc(userName(i.reportedBy))}`], i.simulated && ['Source', 'Alert rule']], body });
 }
 
 /* ── Procurement ── */
@@ -2670,13 +2749,13 @@ function viewINV(id) {
   const c = company(inv.customer), pl = plant(inv.plant), so = state.db.salesOrders.find((s) => s.id === inv.soId);
   const half = Math.floor(inv.gst / 2);
   const body = `<div class="card"><div class="cb"><div class="parties">
-      <div class="party"><div class="lbl">Billed by</div><b>Meridian Devices (training company)</b><div>${esc(pl?.name)}</div></div>
+      <div class="party"><div class="lbl">Billed by</div><b>Meridian Devices Pvt Ltd</b><div>${esc(pl?.name)}</div></div>
       <div class="party"><div class="lbl">Bill to</div><b>${esc(c?.name)}</b><div>${esc(inv.customer)} · ${esc(c?.city)}, ${esc(c?.state)}</div><div class="small muted">Payment terms ${esc(c?.terms)}</div></div>
       <div class="party"><div class="lbl">Invoice</div><b>${esc(inv.id)}</b><div>${esc(fmtDate(inv.createdAt))}</div><div class="small">Delivery ${esc(inv.deliveryId)} · Order ${esc(inv.soId)}</div></div></div>
     ${simpleTable([{ label: 'Material', render: (i) => `${esc(i.material)}<span class="sub">${esc(material(i.material)?.desc)}</span>` }, { label: 'Qty', num: true, render: (i) => num(i.qty) }, { label: 'Price', num: true, render: (i) => esc(money(i.price)) }, { label: 'Amount', num: true, render: (i) => esc(money(i.amount)) }], inv.items)}
     <div class="totals" style="margin-top:12px"><div><span>Net value</span><span>${esc(money(inv.net))}</span></div><div><span>CGST ${inv.gstBp / 200}%</span><span>${esc(money(half))}</span></div><div><span>SGST ${inv.gstBp / 200}%</span><span>${esc(money(inv.gst - half))}</span></div>
       <div class="g"><span>Total (incl. GST ${inv.gstBp / 100}%)</span><span>${esc(money(inv.gross))}</span></div></div>
-    <p class="small muted" style="margin-top:12px">Training document generated by the simulator. Not a tax invoice.</p></div></div>
+    <p class="small muted" style="margin-top:12px">This is a computer-generated document.</p></div></div>
     ${so ? `<div style="margin-top:16px">${card({ title: 'Document flow', body: salesFlow(so) })}</div>` : ''}`;
   return page({ crumbs: [['Sales', withQuery(href('sales'), { tab: 'invoices' })], [inv.id]], title: `Invoice ${esc(inv.id)}${sampleTag(inv)}`,
     actions: (inv.status === 'Open' ? permBtn('invoice.create', 'Record payment', 'pay-inv', { data: { id: inv.id } }) : '') + btn('Print', 'print', { ic: 'download' }),
@@ -2743,7 +2822,7 @@ function viewTeam() {
     body = `<div class="card">${table('act', [{ label: 'Time', render: (a) => esc(fmtDT(a.at)) }, { label: 'User', render: (a) => `${esc(userName(a.by))}${a.as ? `<span class="sub">working as ${esc(userName(a.as))}</span>` : ''}` },
       { label: 'Action', render: (a) => `<span class="tag">${esc(a.action)}</span>` }, { label: 'Description', render: (a) => esc(a.summary) }], rows, { caption: 'Activity log' })}</div>`;
   }
-  return page({ crumbs: [['Team & Activity']], title: 'Team & Activity', sub: 'Sample team members and the audit trail of every change', filters,
+  return page({ crumbs: [['Team & Activity']], title: 'Team & Activity', sub: 'Team members and the audit trail of every change', filters,
     tabs: tabsBar([['people', 'Team', d.users.length], ['activity', 'Activity log', d.activityLog.length]], tab, href('team')), body });
 }
 function viewNotifications() {
@@ -2758,7 +2837,7 @@ function viewAccount() {
     ${card({ title: 'Profile', acts: btn('Edit', 'edit-profile', { cls: 'sm' }), body: `<dl class="attrs" style="margin:0"><div><dt>Name</dt><dd>${esc(u.name)}</dd></div><div><dt>Email</dt><dd>${esc(u.email || '—')}</dd></div><div><dt>Role</dt><dd>${esc(ROLES[u.role])}</dd></div><div><dt>Location</dt><dd>${esc(u.location || '—')}</dd></div></dl>` })}
     ${card({ title: 'Session', body: `<dl class="attrs" style="margin:0"><div><dt>Session expires</dt><dd>${esc(fmtDT(new Date(s.expires).toISOString()))}</dd></div><div><dt>Working as</dt><dd>${s.actingAs ? `${esc(userName(s.actingAs))} (${esc(ROLES[userById(s.actingAs).role])})` : 'Yourself'}</dd></div></dl>
       <div class="row" style="margin-top:14px">${s.actingAs ? btn('Stop working as', 'stop-work-as') : u.role === 'ADMIN' ? btn('Work as another user…', 'work-as-dialog', { ic: 'swap' }) : ''}${btn('Sign out', 'logout', { cls: 'neg', ic: 'logout' })}</div>` })}
-    ${card({ title: 'About this simulator', body: '<p>Sign-in is simulated in the browser and is not server security. Password changes are not offered because there is no server to store credentials securely.</p><p class="muted">Your data is stored in this browser only. Use Administration → Export to keep a copy.</p>' })}</div>`;
+    ${card({ title: 'Your data', body: '<p>Your data is stored in this browser on this device. Use Administration → Export to keep a copy or move it to another device.</p>' })}</div>`;
   return page({ crumbs: [['My Account']], title: 'My Account', body });
 }
 function viewAdmin() {
@@ -2772,10 +2851,10 @@ function viewAdmin() {
       <label class="check"><input type="checkbox" name="allowSelfApproval" ${s.allowSelfApproval ? 'checked' : ''}> Allow the creator of a purchase order to approve it</label>
       <div class="field"><span class="lbl">GST rate</span><span>${s.gstBp / 100}% (CGST + SGST)</span></div><div><button type="submit" class="btn em">Save settings</button></div></form>` })}
     ${card({ title: 'Data', body: `<p>Stored in this browser: <b>${num(Math.round(size / 1024))} KB</b> (schema v${SCHEMA_VERSION}). Browser storage is not a secure database and is not shared with other browsers or users.</p>
-      <div class="row" style="margin-top:12px">${btn('Export JSON', 'export', { ic: 'download' })}${btn('Import JSON…', 'import', { ic: 'upload' })}${btn('Reset to sample data…', 'reset', { cls: 'neg' })}</div>
+      <div class="row" style="margin-top:12px">${btn('Export JSON', 'export', { ic: 'download' })}${btn('Import JSON…', 'import', { ic: 'upload' })}${btn('Reset data…', 'reset', { cls: 'neg' })}</div>
       ${storage.get(`${STORE_KEY}.invalid-backup`) ? '<p class="hint" style="margin-top:10px">A backup of previously unreadable data is kept in this browser (key meridian-alm.data.invalid-backup).</p>' : ''}` })}
     ${card({ title: 'Roles & permissions', cls: 'spanall', flush: true, body: simpleTable([{ label: 'Role', render: ([k]) => `<b>${esc(ROLES[k])}</b>` }, { label: 'Permissions', render: ([k]) => (k === 'ADMIN' ? 'All permissions' : PERMS[k].split(' ').map((p) => `<span class="tag">${esc(p)}</span>`).join(' ')) }], Object.entries(ROLES)) })}</div>`;
-  return page({ crumbs: [['Administration']], title: 'Administration', sub: 'Simulator settings and data management', body });
+  return page({ crumbs: [['Administration']], title: 'Administration', sub: 'Settings and data management', body });
 }
 function viewNotFound() {
   return page({ crumbs: [['Not found']], title: 'Page not found', body: `<div class="card">${empty('The page or record you requested does not exist.', 'It may have been removed by a data reset or import.')}<div class="cb" style="text-align:center"><a class="btn em" href="#/">Go to the launchpad</a></div></div>` });
@@ -2796,7 +2875,7 @@ function dlgTransport() {
   onSubmit: (v) => { const t = createTransport(v); return { msg: `Transport ${t.id} created in DEV` }; } });
 }
 function dlgWorkAs() {
-  openDialog({ title: 'Work as another user', submit: 'Switch', body: `<p class="muted">Act with the permissions of a sample team member, for example the Procurement Head to approve a purchase order. Every switch is recorded in the activity log.</p>
+  openDialog({ title: 'Work as another user', submit: 'Switch', body: `<p class="muted">Act with the permissions of a team member, for example the Procurement Head to approve a purchase order. Every switch is recorded in the activity log.</p>
     ${fld('Team member', 'userId', sel('userId', opts(Object.keys(ROLES).filter((r) => r !== 'ADMIN').flatMap((r) => state.db.users.filter((u) => u.role === r).map((u) => [u.id, `${ROLES[r]} – ${u.name}`])), state.session.actingAs || 'u03'), { req: true }), { req: true })}`,
   onSubmit: (v) => { workAs(v.userId); return { msg: `Now working as ${me().name} (${ROLES[me().role]})` }; } });
 }
@@ -2920,8 +2999,10 @@ const ACTIONS = {
     render();
     if (state.ui.popover === 'user') $('.pop .menu button')?.focus();
     else if (state.ui.popover === 'notif') ($('.pop .notif') || $('.pop a'))?.focus();
+    else if (state.ui.popover === 'apps') $('.pop .menu button')?.focus();
     else $(`[data-pop="${p}"]`)?.focus();
   },
+  back: () => { if (history.length > 1) history.back(); else go('#/'); },
   'open-search': () => { state.ui.popover = 'search'; render(); $('#gsearch')?.focus(); },
   go: (el) => { state.ui.popover = null; go(el.dataset.href); },
   logout: () => { state.ui.popover = null; closeDialog(); logout(); toast('You have been signed out.'); },
@@ -2959,7 +3040,7 @@ const ACTIONS = {
   },
   'new-transport': () => dlgTransport(),
   promote: (el) => runAction(() => promoteTransport(el.dataset.id), (t) => `${t.id} deployed to ${t.env} (simulated)`),
-  'simulate-alert': () => runAction(() => simulateAlert(), (i) => `Simulated alert raised: ${i.id} – ${i.title}`),
+  'simulate-alert': () => runAction(() => simulateAlert(), (i) => `Alert raised: ${i.id} – ${i.title}`),
   'new-incident': () => dlgIncident(),
   'inc-status': (el) => runAction(() => setIncidentStatus(el.dataset.id, el.dataset.to), (i) => `${i.id} is now ${i.status}`),
   'inc-resolve': (el) => openDialog({ title: `Resolve ${el.dataset.id}`, size: 'sm', submit: 'Resolve incident',
@@ -3004,9 +3085,9 @@ const ACTIONS = {
   'edit-profile': () => dlgProfile(),
   export: () => { try { exportData(); toast('Export file downloaded'); } catch (err) { console.error(err); infoDialog('Export failed', 'The data could not be exported in this browser.'); } },
   import: () => { const f = $('#import-file'); f.value = ''; f.click(); },
-  reset: () => openDialog({ title: 'Reset simulator data', size: 'sm', submit: 'Reset data', danger: true,
-    body: `<p>All data in this browser will be replaced with the initial sample data. Export first if you want to keep your changes.</p>${fld('Type RESET to confirm', 'confirm', inp('confirm', { req: true, max: 10, extra: 'autocomplete="off"' }), { req: true })}`,
-    onSubmit: (v) => { if (v.confirm !== 'RESET') throw new SimError('Type RESET in capital letters to confirm.', 'confirm'); resetData(); state.ui.lists = {}; return { msg: 'Simulator data reset to the initial sample data', go: '#/' }; } }),
+  reset: () => openDialog({ title: 'Reset data', size: 'sm', submit: 'Reset data', danger: true,
+    body: `<p>All data in this browser will be replaced with the initial data set. Export first if you want to keep your changes.</p>${fld('Type RESET to confirm', 'confirm', inp('confirm', { req: true, max: 10, extra: 'autocomplete="off"' }), { req: true })}`,
+    onSubmit: (v) => { if (v.confirm !== 'RESET') throw new SimError('Type RESET in capital letters to confirm.', 'confirm'); resetData(); state.ui.lists = {}; return { msg: 'Data reset to the initial data set', go: '#/' }; } }),
 };
 
 document.addEventListener('click', (e) => {
@@ -3137,7 +3218,7 @@ function init() {
   const status = loadData();
   const s = restoreSession();
   if (s === 'expired') state.ui.loginNote = 'Your session expired. Sign in again.';
-  if (status === 'recovered') state.ui.flash = { kind: 'warn', text: 'Stored data could not be read, so the initial sample data was loaded. A backup of the unreadable data was kept in this browser.' };
+  if (status === 'recovered') state.ui.flash = { kind: 'warn', text: 'Stored data could not be read, so the initial data set was loaded. A backup of the unreadable data was kept in this browser.' };
   state.ui.navOpen = window.innerWidth > 600 && storage.get(NAV_KEY) === '1';
   parseHash();
   render();

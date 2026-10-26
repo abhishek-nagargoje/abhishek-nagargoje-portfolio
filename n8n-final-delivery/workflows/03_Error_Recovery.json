@@ -1,0 +1,1320 @@
+{
+  "name": "HR Remedy India - Error Recovery",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## HR Remedy India – Error Recovery\n* **Error Trigger**: select this workflow as the *Error workflow* in the settings of \"HR Remedy India - SEO Article Automation\". Production (scheduled) failures are recorded and the job owned by the failed execution is released (bounded auto-retry, permanent errors are not retried, articles already in Google Docs are reconciled instead of regenerated).\n* **Recovery sweep** (manual, or enable the 30-minute schedule): releases expired leases only, reconciles sheet rows, and collects timed-out DupliChecker reports via the documented callback.\n* n8n does not run error workflows for manual test executions; use the sweep.",
+        "width": 700,
+        "height": 300
+      },
+      "id": "d84cf646-4159-4c57-a700-7528261bf105",
+      "name": "Read Me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -400
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "53635b3a-e94f-42eb-ac2d-08a763048553",
+      "name": "Manual Recovery Sweep",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        400
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "cc3bd560-a487-400b-aedb-63d1e6c51438",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ---- shared helpers (inlined into Code nodes by tools/build_workflows.js) ----\nfunction asText(v) { return v === undefined || v === null ? '' : String(v).trim(); }\nfunction redact(s) {\n  return asText(s)\n    .replace(/(\\b(?:key|token|api_key|apikey)=)[^&\\s\"']+/gi, '$1[REDACTED]')\n    .replace(/(\"?(?:token|apiKey|api_key|authorization)\"?\\s*[:=]\\s*\"?)[A-Za-z0-9._\\-]{8,}/gi, '$1[REDACTED]')\n    .replace(/(Bearer\\s+)[A-Za-z0-9._\\-]+/gi, '$1[REDACTED]')\n    .replace(/AIza[0-9A-Za-z_\\-]{20,}/g, '[REDACTED]');\n}\nfunction truncate(s, n) { s = asText(s); return s.length > n ? s.slice(0, n) + ' …[truncated]' : s; }\nfunction nowLocal(tz) { return DateTime.now().setZone(tz || 'Asia/Kolkata').toFormat('yyyy-MM-dd HH:mm:ss'); }\nfunction parseUrl(u) {\n  const m = /^(https?):\\/\\/([^\\/?#:@\\s]+)(?::(\\d+))?([^?#\\s]*)(\\?[^#\\s]*)?(#\\S*)?$/i.exec(asText(u));\n  if (!m) return null;\n  return { protocol: m[1].toLowerCase(), host: m[2].toLowerCase(), port: m[3] || '', path: m[4] || '/', query: m[5] || '', hash: m[6] || '' };\n}\nfunction hostAllowed(host, domains) {\n  host = asText(host).toLowerCase();\n  return (domains || []).some((d) => { d = asText(d).toLowerCase(); return host === d || host.endsWith('.' + d); });\n}\nfunction normalizeUrl(u) {\n  const p = parseUrl(u);\n  if (!p) return '';\n  let path = p.path.replace(/\\/{2,}/g, '/');\n  if (path.length > 1) path = path.replace(/\\/+$/, '');\n  return p.protocol + '://' + p.host + (p.port ? ':' + p.port : '') + (path || '/') + p.query;\n}\nfunction resolveUrl(href, base) {\n  href = asText(href).replace(/&amp;/g, '&');\n  if (!href || /^(mailto:|tel:|javascript:|data:|#)/i.test(href)) return '';\n  if (/^https?:\\/\\//i.test(href)) return href;\n  const b = parseUrl(base);\n  if (!b) return '';\n  const origin = b.protocol + '://' + b.host + (b.port ? ':' + b.port : '');\n  if (href.startsWith('//')) return b.protocol + ':' + href;\n  if (href.startsWith('/')) return origin + href;\n  const dir = b.path.endsWith('/') ? b.path : b.path.replace(/[^\\/]*$/, '');\n  const parts = (dir + href).split('/');\n  const out = [];\n  for (const seg of parts) { if (seg === '..') out.pop(); else if (seg !== '.') out.push(seg); }\n  return origin + out.join('/').replace(/^([^\\/])/, '/$1');\n}\n// Error object from an HTTP Request node that used \"On Error: Continue\".\nfunction httpFailure(json) {\n  if (!json || json.error === undefined) return null;\n  const e = json.error;\n  const msg = typeof e === 'string' ? e : (e.message || e.description || JSON.stringify(e));\n  const code = typeof e === 'object' ? (e.httpCode || e.statusCode || e.status || (e.cause && e.cause.status) || '') : '';\n  const desc = typeof e === 'object' ? asText(e.description) : '';\n  return { message: redact(msg + (desc && desc !== msg ? ' — ' + desc : '')), code: String(code) };\n}\nfunction isTransientCode(code, msg) {\n  return /^(408|409|425|429|5\\d\\d)$/.test(String(code)) || /timeout|timed out|ETIMEDOUT|ECONNRESET|ECONNREFUSED|EAI_AGAIN|socket hang up|overloaded|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg || '');\n}\n// Interprets a Gemini generateContent response (or HTTP failure item).\nfunction readGemini(json) {\n  const fail = httpFailure(json);\n  if (fail) {\n    const permanent = /API key not valid|API_KEY_INVALID|PERMISSION_DENIED|403|401|not found for API version|is not found|NOT_FOUND/i.test(fail.message) && !isTransientCode(fail.code, fail.message);\n    return { ok: false, kind: permanent ? 'PERMANENT' : (isTransientCode(fail.code, fail.message) ? 'TRANSIENT' : 'API_ERROR'), error: 'Gemini request failed: ' + fail.message };\n  }\n  if (!json || typeof json !== 'object') return { ok: false, kind: 'INVALID', error: 'Gemini returned a non-JSON response' };\n  if (json.promptFeedback && json.promptFeedback.blockReason) {\n    return { ok: false, kind: 'BLOCKED', error: 'Gemini blocked the prompt: ' + json.promptFeedback.blockReason };\n  }\n  const cand = Array.isArray(json.candidates) ? json.candidates[0] : null;\n  if (!cand) return { ok: false, kind: 'INVALID', error: 'Gemini response contained no candidates' };\n  const finish = asText(cand.finishReason);\n  const parts = (cand.content && Array.isArray(cand.content.parts)) ? cand.content.parts : [];\n  const text = parts.filter((p) => typeof p.text === 'string' && !p.thought).map((p) => p.text).join('');\n  if (finish && !['STOP', 'FINISH_REASON_UNSPECIFIED'].includes(finish)) {\n    return { ok: false, kind: finish === 'MAX_TOKENS' ? 'TRUNCATED' : 'BLOCKED', error: 'Gemini stopped with finishReason ' + finish, text, finishReason: finish };\n  }\n  if (!text.trim()) return { ok: false, kind: 'INVALID', error: 'Gemini returned empty text' };\n  return { ok: true, text, finishReason: finish, usage: json.usageMetadata || null, modelVersion: json.modelVersion || '' };\n}\nfunction extractJson(text) {\n  let t = asText(text).replace(/^﻿/, '');\n  const fence = /```(?:json)?\\s*([\\s\\S]*?)```/i.exec(t);\n  if (fence) t = fence[1].trim();\n  try { return { ok: true, value: JSON.parse(t) }; } catch (e) { /* try the outermost object */ }\n  const s = t.indexOf('{'); const e = t.lastIndexOf('}');\n  if (s >= 0 && e > s) { try { return { ok: true, value: JSON.parse(t.slice(s, e + 1)) }; } catch (err) { return { ok: false, error: 'Invalid JSON: ' + err.message }; } }\n  return { ok: false, error: 'No JSON object found in model output' };\n}\nfunction geminiRequest(system, userText, gen) {\n  return {\n    systemInstruction: { parts: [{ text: system }] },\n    contents: [{ role: 'user', parts: [{ text: userText }] }],\n    generationConfig: Object.assign({ responseMimeType: 'application/json' }, gen || {}),\n  };\n}\n// Adds a bounded corrective turn after an invalid structured response.\nfunction correctiveRequest(prev, badText, problems) {\n  const req = JSON.parse(JSON.stringify(prev));\n  req.contents.push({ role: 'model', parts: [{ text: truncate(badText || '(empty response)', 6000) }] });\n  req.contents.push({ role: 'user', parts: [{ text: 'Your previous response was rejected by automated validation for these reasons:\\n- ' + problems.join('\\n- ') + '\\n\\nReturn the COMPLETE corrected response again as one valid JSON object that follows the required schema exactly. Do not add commentary or code fences.' }] });\n  return req;\n}\nfunction assertLease(json, stage) {\n  if (json && json.lease_ok === false) {\n    throw new Error('LEASE_LOST at ' + stage + ': another execution now owns this job (' + JSON.stringify(json.detail || {}) + '). Stopping without further writes.');\n  }\n}\nfunction setOutcome(ctx, status, stage, reason, retryable) {\n  ctx.outcome = { status, stage, reason: redact(truncate(reason, 1500)), retryable: !!retryable };\n  return ctx;\n}\n\n// Error Trigger payload: { execution: {id, url, error, lastNodeExecuted, mode, retryOf}, workflow: {id, name} }\n// (or { trigger: {...}, workflow } when the failing node was the trigger).\nconst ex = $json.execution || {};\nconst wf = $json.workflow || {};\nconst err = ex.error || ($json.trigger && $json.trigger.error) || {};\n// n8n shortens some messages to the text after their last colon (e.g. inside a\n// URL); the first line of the stack keeps the full original message.\nconst stackLine = asText(err.stack).split('\\n')[0].replace(/^(Node|NodeOperation|NodeApi|Expression)?Error:\\s*/, '');\nconst primary = stackLine.length > asText(err.message).length ? stackLine : asText(err.message);\nconst message = [primary, asText(err.description)].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' — ') || 'Unknown error';\nreturn { json: {\n  execution_id: ex.id !== undefined && ex.id !== null ? String(ex.id) : '',\n  workflow_id: asText(wf.id), workflow_name: asText(wf.name), mode: asText(ex.mode || 'trigger'),\n  last_node: asText(ex.lastNodeExecuted || (err.node && err.node.name) || 'unknown'),\n  error_message: truncate(redact(message), 4000), execution_url: asText(ex.url),\n} };\n"
+      },
+      "id": "c45e9b58-3581-48ab-a8d7-4ca9d4e77149",
+      "name": "Extract Failure Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT r.*, seo_get_setting('runtime_config') AS runtime_config FROM seo_record_execution_error($1, $2, $3, $4, $5, $6, $7) r",
+        "options": {
+          "queryReplacement": "={{ [ $json.execution_id, $json.workflow_id, $json.workflow_name, $json.mode, $json.last_node, $json.error_message, 3 ] }}"
+        }
+      },
+      "id": "60e01c7b-bc64-4bf0-a2c0-7949a3a6192e",
+      "name": "Record Execution Failure",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        520,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": null,
+          "name": "SEO PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "89a8f344-02c8-4071-a7b6-ca7c19df2250",
+      "name": "Every 30 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        600
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recovery sweep settings. The sweep only releases leases that expired more\n// than grace_minutes ago, so a job that is still running is never reset.\nreturn [{ json: { settings: {\n  owner: 'recovery-' + String($execution.id),\n  grace_minutes: 10,\n  max_recovery_attempts: 3,\n  plagiarism_hash_valid_hours: 6.5,\n} } }];\n"
+      },
+      "id": "c4e8c656-8c8c-46af-a7f5-29a1d7b094d5",
+      "name": "Recovery Sweep Settings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT s.*, seo_get_setting('runtime_config') AS runtime_config FROM seo_recovery_sweep($1, $2, $3, $4) s",
+        "options": {
+          "queryReplacement": "={{ [ $json.settings.owner, $json.settings.grace_minutes, $json.settings.max_recovery_attempts, $json.settings.plagiarism_hash_valid_hours ] }}"
+        }
+      },
+      "id": "c691d031-a30b-4a9d-a2ee-3d0b370b0903",
+      "name": "Run Recovery Sweep",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        520,
+        400
+      ],
+      "credentials": {
+        "postgres": {
+          "id": null,
+          "name": "SEO PostgreSQL"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ---- shared helpers (inlined into Code nodes by tools/build_workflows.js) ----\nfunction asText(v) { return v === undefined || v === null ? '' : String(v).trim(); }\nfunction redact(s) {\n  return asText(s)\n    .replace(/(\\b(?:key|token|api_key|apikey)=)[^&\\s\"']+/gi, '$1[REDACTED]')\n    .replace(/(\"?(?:token|apiKey|api_key|authorization)\"?\\s*[:=]\\s*\"?)[A-Za-z0-9._\\-]{8,}/gi, '$1[REDACTED]')\n    .replace(/(Bearer\\s+)[A-Za-z0-9._\\-]+/gi, '$1[REDACTED]')\n    .replace(/AIza[0-9A-Za-z_\\-]{20,}/g, '[REDACTED]');\n}\nfunction truncate(s, n) { s = asText(s); return s.length > n ? s.slice(0, n) + ' …[truncated]' : s; }\nfunction nowLocal(tz) { return DateTime.now().setZone(tz || 'Asia/Kolkata').toFormat('yyyy-MM-dd HH:mm:ss'); }\nfunction parseUrl(u) {\n  const m = /^(https?):\\/\\/([^\\/?#:@\\s]+)(?::(\\d+))?([^?#\\s]*)(\\?[^#\\s]*)?(#\\S*)?$/i.exec(asText(u));\n  if (!m) return null;\n  return { protocol: m[1].toLowerCase(), host: m[2].toLowerCase(), port: m[3] || '', path: m[4] || '/', query: m[5] || '', hash: m[6] || '' };\n}\nfunction hostAllowed(host, domains) {\n  host = asText(host).toLowerCase();\n  return (domains || []).some((d) => { d = asText(d).toLowerCase(); return host === d || host.endsWith('.' + d); });\n}\nfunction normalizeUrl(u) {\n  const p = parseUrl(u);\n  if (!p) return '';\n  let path = p.path.replace(/\\/{2,}/g, '/');\n  if (path.length > 1) path = path.replace(/\\/+$/, '');\n  return p.protocol + '://' + p.host + (p.port ? ':' + p.port : '') + (path || '/') + p.query;\n}\nfunction resolveUrl(href, base) {\n  href = asText(href).replace(/&amp;/g, '&');\n  if (!href || /^(mailto:|tel:|javascript:|data:|#)/i.test(href)) return '';\n  if (/^https?:\\/\\//i.test(href)) return href;\n  const b = parseUrl(base);\n  if (!b) return '';\n  const origin = b.protocol + '://' + b.host + (b.port ? ':' + b.port : '');\n  if (href.startsWith('//')) return b.protocol + ':' + href;\n  if (href.startsWith('/')) return origin + href;\n  const dir = b.path.endsWith('/') ? b.path : b.path.replace(/[^\\/]*$/, '');\n  const parts = (dir + href).split('/');\n  const out = [];\n  for (const seg of parts) { if (seg === '..') out.pop(); else if (seg !== '.') out.push(seg); }\n  return origin + out.join('/').replace(/^([^\\/])/, '/$1');\n}\n// Error object from an HTTP Request node that used \"On Error: Continue\".\nfunction httpFailure(json) {\n  if (!json || json.error === undefined) return null;\n  const e = json.error;\n  const msg = typeof e === 'string' ? e : (e.message || e.description || JSON.stringify(e));\n  const code = typeof e === 'object' ? (e.httpCode || e.statusCode || e.status || (e.cause && e.cause.status) || '') : '';\n  const desc = typeof e === 'object' ? asText(e.description) : '';\n  return { message: redact(msg + (desc && desc !== msg ? ' — ' + desc : '')), code: String(code) };\n}\nfunction isTransientCode(code, msg) {\n  return /^(408|409|425|429|5\\d\\d)$/.test(String(code)) || /timeout|timed out|ETIMEDOUT|ECONNRESET|ECONNREFUSED|EAI_AGAIN|socket hang up|overloaded|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg || '');\n}\n// Interprets a Gemini generateContent response (or HTTP failure item).\nfunction readGemini(json) {\n  const fail = httpFailure(json);\n  if (fail) {\n    const permanent = /API key not valid|API_KEY_INVALID|PERMISSION_DENIED|403|401|not found for API version|is not found|NOT_FOUND/i.test(fail.message) && !isTransientCode(fail.code, fail.message);\n    return { ok: false, kind: permanent ? 'PERMANENT' : (isTransientCode(fail.code, fail.message) ? 'TRANSIENT' : 'API_ERROR'), error: 'Gemini request failed: ' + fail.message };\n  }\n  if (!json || typeof json !== 'object') return { ok: false, kind: 'INVALID', error: 'Gemini returned a non-JSON response' };\n  if (json.promptFeedback && json.promptFeedback.blockReason) {\n    return { ok: false, kind: 'BLOCKED', error: 'Gemini blocked the prompt: ' + json.promptFeedback.blockReason };\n  }\n  const cand = Array.isArray(json.candidates) ? json.candidates[0] : null;\n  if (!cand) return { ok: false, kind: 'INVALID', error: 'Gemini response contained no candidates' };\n  const finish = asText(cand.finishReason);\n  const parts = (cand.content && Array.isArray(cand.content.parts)) ? cand.content.parts : [];\n  const text = parts.filter((p) => typeof p.text === 'string' && !p.thought).map((p) => p.text).join('');\n  if (finish && !['STOP', 'FINISH_REASON_UNSPECIFIED'].includes(finish)) {\n    return { ok: false, kind: finish === 'MAX_TOKENS' ? 'TRUNCATED' : 'BLOCKED', error: 'Gemini stopped with finishReason ' + finish, text, finishReason: finish };\n  }\n  if (!text.trim()) return { ok: false, kind: 'INVALID', error: 'Gemini returned empty text' };\n  return { ok: true, text, finishReason: finish, usage: json.usageMetadata || null, modelVersion: json.modelVersion || '' };\n}\nfunction extractJson(text) {\n  let t = asText(text).replace(/^﻿/, '');\n  const fence = /```(?:json)?\\s*([\\s\\S]*?)```/i.exec(t);\n  if (fence) t = fence[1].trim();\n  try { return { ok: true, value: JSON.parse(t) }; } catch (e) { /* try the outermost object */ }\n  const s = t.indexOf('{'); const e = t.lastIndexOf('}');\n  if (s >= 0 && e > s) { try { return { ok: true, value: JSON.parse(t.slice(s, e + 1)) }; } catch (err) { return { ok: false, error: 'Invalid JSON: ' + err.message }; } }\n  return { ok: false, error: 'No JSON object found in model output' };\n}\nfunction geminiRequest(system, userText, gen) {\n  return {\n    systemInstruction: { parts: [{ text: system }] },\n    contents: [{ role: 'user', parts: [{ text: userText }] }],\n    generationConfig: Object.assign({ responseMimeType: 'application/json' }, gen || {}),\n  };\n}\n// Adds a bounded corrective turn after an invalid structured response.\nfunction correctiveRequest(prev, badText, problems) {\n  const req = JSON.parse(JSON.stringify(prev));\n  req.contents.push({ role: 'model', parts: [{ text: truncate(badText || '(empty response)', 6000) }] });\n  req.contents.push({ role: 'user', parts: [{ text: 'Your previous response was rejected by automated validation for these reasons:\\n- ' + problems.join('\\n- ') + '\\n\\nReturn the COMPLETE corrected response again as one valid JSON object that follows the required schema exactly. Do not add commentary or code fences.' }] });\n  return req;\n}\nfunction assertLease(json, stage) {\n  if (json && json.lease_ok === false) {\n    throw new Error('LEASE_LOST at ' + stage + ': another execution now owns this job (' + JSON.stringify(json.detail || {}) + '). Stopping without further writes.');\n  }\n}\nfunction setOutcome(ctx, status, stage, reason, retryable) {\n  ctx.outcome = { status, stage, reason: redact(truncate(reason, 1500)), retryable: !!retryable };\n  return ctx;\n}\n\n// Common shape for Error Trigger results and sweep rows.\nconst j = $json;\nconst action = asText(j.action);\nlet route = 'NONE';\nif (action === 'SYNC_SHEETS') route = 'SYNC_SHEETS';\nelse if (action === 'RETRY' || action === 'MARK_ERROR') route = 'KEYWORD_STATUS';\nelse if (action === 'REPOLL_PLAGIARISM') route = 'REPOLL';\nconst rc = j.runtime_config || null;\nif (route !== 'NONE' && (!rc || !rc.spreadsheet_id)) {\n  throw new Error('CONFIG_ERROR: runtime configuration not found in PostgreSQL (seo_settings.runtime_config). Run \"HR Remedy India - SEO Article Automation\" once so recovery knows the spreadsheet.');\n}\nreturn { json: {\n  route, action: action || 'NONE', article_id: j.article_id || null, keyword_id: j.keyword_id || null,\n  sheet_status: j.sheet_status || null, sheet_last_error: j.sheet_last_error || '', job: j.job || null,\n  plagiarism: j.plagiarism || null, runtime_config: rc, error_id: j.error_id || null,\n} };\n"
+      },
+      "id": "d9f124f7-c163-4173-a812-677c8fa139ca",
+      "name": "Normalize Recovery Item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "719316c4-c0bd-4b4a-a6c7-c58590a6ed84",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "SYNC_SHEETS",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "SYNC_SHEETS"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "a54e26c3-f0aa-4527-a1cc-2012c53ecdd4",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "KEYWORD_STATUS",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "KEYWORD_STATUS"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "e0064f29-687b-4bde-aadc-ab98e22d53d7",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "REPOLL",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "REPOLL"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "409b6746-e03f-4e49-ad5e-e59854fee2b2",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "NONE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "NONE"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": 3
+        }
+      },
+      "id": "b59c4f49-7874-409b-a0d5-b2587e0aad4f",
+      "name": "Route Recovery Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        1040,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\nreturn { json: { recovered: false, action: j.action, article_id: j.article_id, error_id: j.error_id,\n  message: j.action === 'NONE' && !j.article_id ? 'Nothing to recover (no job owned by the failed execution, or nothing found by the sweep).' : 'No further action required.' } };\n"
+      },
+      "id": "4e5f6af4-0e6c-4e6c-a956-d4cbf24c2b35",
+      "name": "No Recovery Needed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ---- shared helpers (inlined into Code nodes by tools/build_workflows.js) ----\nfunction asText(v) { return v === undefined || v === null ? '' : String(v).trim(); }\nfunction redact(s) {\n  return asText(s)\n    .replace(/(\\b(?:key|token|api_key|apikey)=)[^&\\s\"']+/gi, '$1[REDACTED]')\n    .replace(/(\"?(?:token|apiKey|api_key|authorization)\"?\\s*[:=]\\s*\"?)[A-Za-z0-9._\\-]{8,}/gi, '$1[REDACTED]')\n    .replace(/(Bearer\\s+)[A-Za-z0-9._\\-]+/gi, '$1[REDACTED]')\n    .replace(/AIza[0-9A-Za-z_\\-]{20,}/g, '[REDACTED]');\n}\nfunction truncate(s, n) { s = asText(s); return s.length > n ? s.slice(0, n) + ' …[truncated]' : s; }\nfunction nowLocal(tz) { return DateTime.now().setZone(tz || 'Asia/Kolkata').toFormat('yyyy-MM-dd HH:mm:ss'); }\nfunction parseUrl(u) {\n  const m = /^(https?):\\/\\/([^\\/?#:@\\s]+)(?::(\\d+))?([^?#\\s]*)(\\?[^#\\s]*)?(#\\S*)?$/i.exec(asText(u));\n  if (!m) return null;\n  return { protocol: m[1].toLowerCase(), host: m[2].toLowerCase(), port: m[3] || '', path: m[4] || '/', query: m[5] || '', hash: m[6] || '' };\n}\nfunction hostAllowed(host, domains) {\n  host = asText(host).toLowerCase();\n  return (domains || []).some((d) => { d = asText(d).toLowerCase(); return host === d || host.endsWith('.' + d); });\n}\nfunction normalizeUrl(u) {\n  const p = parseUrl(u);\n  if (!p) return '';\n  let path = p.path.replace(/\\/{2,}/g, '/');\n  if (path.length > 1) path = path.replace(/\\/+$/, '');\n  return p.protocol + '://' + p.host + (p.port ? ':' + p.port : '') + (path || '/') + p.query;\n}\nfunction resolveUrl(href, base) {\n  href = asText(href).replace(/&amp;/g, '&');\n  if (!href || /^(mailto:|tel:|javascript:|data:|#)/i.test(href)) return '';\n  if (/^https?:\\/\\//i.test(href)) return href;\n  const b = parseUrl(base);\n  if (!b) return '';\n  const origin = b.protocol + '://' + b.host + (b.port ? ':' + b.port : '');\n  if (href.startsWith('//')) return b.protocol + ':' + href;\n  if (href.startsWith('/')) return origin + href;\n  const dir = b.path.endsWith('/') ? b.path : b.path.replace(/[^\\/]*$/, '');\n  const parts = (dir + href).split('/');\n  const out = [];\n  for (const seg of parts) { if (seg === '..') out.pop(); else if (seg !== '.') out.push(seg); }\n  return origin + out.join('/').replace(/^([^\\/])/, '/$1');\n}\n// Error object from an HTTP Request node that used \"On Error: Continue\".\nfunction httpFailure(json) {\n  if (!json || json.error === undefined) return null;\n  const e = json.error;\n  const msg = typeof e === 'string' ? e : (e.message || e.description || JSON.stringify(e));\n  const code = typeof e === 'object' ? (e.httpCode || e.statusCode || e.status || (e.cause && e.cause.status) || '') : '';\n  const desc = typeof e === 'object' ? asText(e.description) : '';\n  return { message: redact(msg + (desc && desc !== msg ? ' — ' + desc : '')), code: String(code) };\n}\nfunction isTransientCode(code, msg) {\n  return /^(408|409|425|429|5\\d\\d)$/.test(String(code)) || /timeout|timed out|ETIMEDOUT|ECONNRESET|ECONNREFUSED|EAI_AGAIN|socket hang up|overloaded|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg || '');\n}\n// Interprets a Gemini generateContent response (or HTTP failure item).\nfunction readGemini(json) {\n  const fail = httpFailure(json);\n  if (fail) {\n    const permanent = /API key not valid|API_KEY_INVALID|PERMISSION_DENIED|403|401|not found for API version|is not found|NOT_FOUND/i.test(fail.message) && !isTransientCode(fail.code, fail.message);\n    return { ok: false, kind: permanent ? 'PERMANENT' : (isTransientCode(fail.code, fail.message) ? 'TRANSIENT' : 'API_ERROR'), error: 'Gemini request failed: ' + fail.message };\n  }\n  if (!json || typeof json !== 'object') return { ok: false, kind: 'INVALID', error: 'Gemini returned a non-JSON response' };\n  if (json.promptFeedback && json.promptFeedback.blockReason) {\n    return { ok: false, kind: 'BLOCKED', error: 'Gemini blocked the prompt: ' + json.promptFeedback.blockReason };\n  }\n  const cand = Array.isArray(json.candidates) ? json.candidates[0] : null;\n  if (!cand) return { ok: false, kind: 'INVALID', error: 'Gemini response contained no candidates' };\n  const finish = asText(cand.finishReason);\n  const parts = (cand.content && Array.isArray(cand.content.parts)) ? cand.content.parts : [];\n  const text = parts.filter((p) => typeof p.text === 'string' && !p.thought).map((p) => p.text).join('');\n  if (finish && !['STOP', 'FINISH_REASON_UNSPECIFIED'].includes(finish)) {\n    return { ok: false, kind: finish === 'MAX_TOKENS' ? 'TRUNCATED' : 'BLOCKED', error: 'Gemini stopped with finishReason ' + finish, text, finishReason: finish };\n  }\n  if (!text.trim()) return { ok: false, kind: 'INVALID', error: 'Gemini returned empty text' };\n  return { ok: true, text, finishReason: finish, usage: json.usageMetadata || null, modelVersion: json.modelVersion || '' };\n}\nfunction extractJson(text) {\n  let t = asText(text).replace(/^﻿/, '');\n  const fence = /```(?:json)?\\s*([\\s\\S]*?)```/i.exec(t);\n  if (fence) t = fence[1].trim();\n  try { return { ok: true, value: JSON.parse(t) }; } catch (e) { /* try the outermost object */ }\n  const s = t.indexOf('{'); const e = t.lastIndexOf('}');\n  if (s >= 0 && e > s) { try { return { ok: true, value: JSON.parse(t.slice(s, e + 1)) }; } catch (err) { return { ok: false, error: 'Invalid JSON: ' + err.message }; } }\n  return { ok: false, error: 'No JSON object found in model output' };\n}\nfunction geminiRequest(system, userText, gen) {\n  return {\n    systemInstruction: { parts: [{ text: system }] },\n    contents: [{ role: 'user', parts: [{ text: userText }] }],\n    generationConfig: Object.assign({ responseMimeType: 'application/json' }, gen || {}),\n  };\n}\n// Adds a bounded corrective turn after an invalid structured response.\nfunction correctiveRequest(prev, badText, problems) {\n  const req = JSON.parse(JSON.stringify(prev));\n  req.contents.push({ role: 'model', parts: [{ text: truncate(badText || '(empty response)', 6000) }] });\n  req.contents.push({ role: 'user', parts: [{ text: 'Your previous response was rejected by automated validation for these reasons:\\n- ' + problems.join('\\n- ') + '\\n\\nReturn the COMPLETE corrected response again as one valid JSON object that follows the required schema exactly. Do not add commentary or code fences.' }] });\n  return req;\n}\nfunction assertLease(json, stage) {\n  if (json && json.lease_ok === false) {\n    throw new Error('LEASE_LOST at ' + stage + ': another execution now owns this job (' + JSON.stringify(json.detail || {}) + '). Stopping without further writes.');\n  }\n}\nfunction setOutcome(ctx, status, stage, reason, retryable) {\n  ctx.outcome = { status, stage, reason: redact(truncate(reason, 1500)), retryable: !!retryable };\n  return ctx;\n}\n\n// Rebuilds the Article_Log and Keywords rows from PostgreSQL for an article\n// whose state is final but whose sheet rows were never updated. Nothing is\n// regenerated and nothing is written to Google Docs.\nconst j = $json;\nconst job = j.job || {};\nconst rc = j.runtime_config;\nconst tz = rc.timezone || 'Asia/Kolkata';\nconst now = nowLocal(tz);\nconst ap = job.approval_payload || job.approval_candidate || {};\nconst a = ap.article || {};\nconst e = ap.editorial || job.editorial_report || null;\nconst p = ap.plagiarism || job.plagiarism_summary || null;\nconst approved = job.status === 'APPROVED';\nconst fmt = (iso) => iso ? DateTime.fromISO(String(iso)).setZone(tz).toFormat('yyyy-MM-dd HH:mm:ss') : now;\nconst eeta = e ? { overall_status: e.overall_status, checks: (e.individual_checks || []).map((x) => x.check + ': ' + x.status),\n  unsupported_claims: (e.unsupported_claims || []).length, note: 'Internal E-E-A-T-oriented editorial assessment; not a Google score or certification.', reconciled_by: 'Error Recovery' }\n  : { overall_status: 'NOT_EVALUATED', reconciled_by: 'Error Recovery' };\nconst plagStatus = !p ? 'NOT_CHECKED' : (p.status === 'COMPLETED' ? (p.passed === false ? 'FAIL' : 'PASS') : (p.status || 'UNKNOWN'));\nconst articleLog = {\n  Article_ID: job.article_id, Keyword_ID: job.keyword_id, Target_Page_URL: job.target_page_url, Primary_Keyword: job.primary_keyword,\n  Article_Title: a.Article_Title || '', SEO_Title: a.SEO_Title || '', Meta_Description: a.Meta_Description || '', URL_Slug: a.URL_Slug || '',\n  Quality_Status: job.quality_status || (e ? e.overall_status : 'NOT_EVALUATED'), EETA_Report: JSON.stringify(eeta).slice(0, 45000),\n  Plagiarism_Percent: p && p.plag_percent !== undefined && p.plag_percent !== null ? p.plag_percent : '', Plagiarism_Status: plagStatus,\n  Plagiarism_Report_URL: p ? (p.report_reference || '') : '', Attempts: job.attempts || 0,\n  Google_Doc_ID: approved ? (job.google_doc_id || '') : '', Google_Doc_URL: approved ? (job.google_doc_url || '') : '',\n  Status: job.status, Error: approved ? '' : truncate(job.last_error || '', 2000), Created_At: fmt(job.created_at), Updated_At: now,\n  _spreadsheet_id: rc.spreadsheet_id, _sheet: rc.sheets.article_log,\n};\nconst keywordsRow = { Keyword_ID: job.keyword_id, Status: job.status, Processed_At: now, Last_Error: approved ? '' : truncate(job.last_error || '', 1500),\n  _spreadsheet_id: rc.spreadsheet_id, _sheet: rc.sheets.keywords };\nreturn { json: { article_log_row: articleLog, keywords_row: keywordsRow, article_id: job.article_id, keyword_id: job.keyword_id, owner: 'recovery-' + String($execution.id) } };\n"
+      },
+      "id": "b2317f9b-7de2-4c0f-a261-274f3f7a32d4",
+      "name": "Build Reconciliation Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $json.article_log_row };\n"
+      },
+      "id": "f098ca93-2fd9-4684-ad89-4fec5167f6fa",
+      "name": "Reconcile Article_Log Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $json._spreadsheet_id }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $json._sheet }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Article_ID"
+          ],
+          "schema": [
+            {
+              "id": "Article_ID",
+              "displayName": "Article_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Keyword_ID",
+              "displayName": "Keyword_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Target_Page_URL",
+              "displayName": "Target_Page_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Primary_Keyword",
+              "displayName": "Primary_Keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Article_Title",
+              "displayName": "Article_Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SEO_Title",
+              "displayName": "SEO_Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Meta_Description",
+              "displayName": "Meta_Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "URL_Slug",
+              "displayName": "URL_Slug",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Quality_Status",
+              "displayName": "Quality_Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "EETA_Report",
+              "displayName": "EETA_Report",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Plagiarism_Percent",
+              "displayName": "Plagiarism_Percent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Plagiarism_Status",
+              "displayName": "Plagiarism_Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Plagiarism_Report_URL",
+              "displayName": "Plagiarism_Report_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Attempts",
+              "displayName": "Attempts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Google_Doc_ID",
+              "displayName": "Google_Doc_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Google_Doc_URL",
+              "displayName": "Google_Doc_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error",
+              "displayName": "Error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created_At",
+              "displayName": "Created_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Updated_At",
+              "displayName": "Updated_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "a7bfe66e-2bea-4ecf-aeec-d17ea0ae7771",
+      "name": "Reconcile Article_Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1820,
+        -200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": null,
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const prep = $('Build Reconciliation Rows').item.json;\nreturn { json: Object.assign({}, prep.keywords_row, { _article_log_ok: !$json.error }) };\n"
+      },
+      "id": "9d8a042e-521d-46ce-a8a1-419fe05cb4c5",
+      "name": "Reconcile Keywords Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $json._spreadsheet_id }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $json._sheet }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Keyword_ID"
+          ],
+          "schema": [
+            {
+              "id": "Keyword_ID",
+              "displayName": "Keyword_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Target_Page_URL",
+              "displayName": "Target_Page_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Primary_Keyword",
+              "displayName": "Primary_Keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Supporting_Keywords",
+              "displayName": "Supporting_Keywords",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Search_Intent",
+              "displayName": "Search_Intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Target_Audience",
+              "displayName": "Target_Audience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Target_Location",
+              "displayName": "Target_Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Language",
+              "displayName": "Language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Processing_Started_At",
+              "displayName": "Processing_Started_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Processed_At",
+              "displayName": "Processed_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last_Error",
+              "displayName": "Last_Error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "406220ae-94e4-403d-a1e0-72d1593a65e1",
+      "name": "Reconcile Keywords Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2340,
+        -200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": null,
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT e.lease_ok, e.article_id, e.status, e.detail FROM seo_job_event($1, $2, 'SHEETS_SYNCED', $3::jsonb, 20) e",
+        "options": {
+          "queryReplacement": "={{ [ $('Build Reconciliation Rows').item.json.article_id, $('Build Reconciliation Rows').item.json.owner, JSON.stringify({ keywords: !$json.error, article_log: $('Reconcile Keywords Row').item.json._article_log_ok === true }) ] }}"
+        }
+      },
+      "id": "37e3d35f-d037-4840-a585-ef8946018584",
+      "name": "Mark Reconciled",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        2600,
+        -200
+      ],
+      "credentials": {
+        "postgres": {
+          "id": null,
+          "name": "SEO PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ---- shared helpers (inlined into Code nodes by tools/build_workflows.js) ----\nfunction asText(v) { return v === undefined || v === null ? '' : String(v).trim(); }\nfunction redact(s) {\n  return asText(s)\n    .replace(/(\\b(?:key|token|api_key|apikey)=)[^&\\s\"']+/gi, '$1[REDACTED]')\n    .replace(/(\"?(?:token|apiKey|api_key|authorization)\"?\\s*[:=]\\s*\"?)[A-Za-z0-9._\\-]{8,}/gi, '$1[REDACTED]')\n    .replace(/(Bearer\\s+)[A-Za-z0-9._\\-]+/gi, '$1[REDACTED]')\n    .replace(/AIza[0-9A-Za-z_\\-]{20,}/g, '[REDACTED]');\n}\nfunction truncate(s, n) { s = asText(s); return s.length > n ? s.slice(0, n) + ' …[truncated]' : s; }\nfunction nowLocal(tz) { return DateTime.now().setZone(tz || 'Asia/Kolkata').toFormat('yyyy-MM-dd HH:mm:ss'); }\nfunction parseUrl(u) {\n  const m = /^(https?):\\/\\/([^\\/?#:@\\s]+)(?::(\\d+))?([^?#\\s]*)(\\?[^#\\s]*)?(#\\S*)?$/i.exec(asText(u));\n  if (!m) return null;\n  return { protocol: m[1].toLowerCase(), host: m[2].toLowerCase(), port: m[3] || '', path: m[4] || '/', query: m[5] || '', hash: m[6] || '' };\n}\nfunction hostAllowed(host, domains) {\n  host = asText(host).toLowerCase();\n  return (domains || []).some((d) => { d = asText(d).toLowerCase(); return host === d || host.endsWith('.' + d); });\n}\nfunction normalizeUrl(u) {\n  const p = parseUrl(u);\n  if (!p) return '';\n  let path = p.path.replace(/\\/{2,}/g, '/');\n  if (path.length > 1) path = path.replace(/\\/+$/, '');\n  return p.protocol + '://' + p.host + (p.port ? ':' + p.port : '') + (path || '/') + p.query;\n}\nfunction resolveUrl(href, base) {\n  href = asText(href).replace(/&amp;/g, '&');\n  if (!href || /^(mailto:|tel:|javascript:|data:|#)/i.test(href)) return '';\n  if (/^https?:\\/\\//i.test(href)) return href;\n  const b = parseUrl(base);\n  if (!b) return '';\n  const origin = b.protocol + '://' + b.host + (b.port ? ':' + b.port : '');\n  if (href.startsWith('//')) return b.protocol + ':' + href;\n  if (href.startsWith('/')) return origin + href;\n  const dir = b.path.endsWith('/') ? b.path : b.path.replace(/[^\\/]*$/, '');\n  const parts = (dir + href).split('/');\n  const out = [];\n  for (const seg of parts) { if (seg === '..') out.pop(); else if (seg !== '.') out.push(seg); }\n  return origin + out.join('/').replace(/^([^\\/])/, '/$1');\n}\n// Error object from an HTTP Request node that used \"On Error: Continue\".\nfunction httpFailure(json) {\n  if (!json || json.error === undefined) return null;\n  const e = json.error;\n  const msg = typeof e === 'string' ? e : (e.message || e.description || JSON.stringify(e));\n  const code = typeof e === 'object' ? (e.httpCode || e.statusCode || e.status || (e.cause && e.cause.status) || '') : '';\n  const desc = typeof e === 'object' ? asText(e.description) : '';\n  return { message: redact(msg + (desc && desc !== msg ? ' — ' + desc : '')), code: String(code) };\n}\nfunction isTransientCode(code, msg) {\n  return /^(408|409|425|429|5\\d\\d)$/.test(String(code)) || /timeout|timed out|ETIMEDOUT|ECONNRESET|ECONNREFUSED|EAI_AGAIN|socket hang up|overloaded|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg || '');\n}\n// Interprets a Gemini generateContent response (or HTTP failure item).\nfunction readGemini(json) {\n  const fail = httpFailure(json);\n  if (fail) {\n    const permanent = /API key not valid|API_KEY_INVALID|PERMISSION_DENIED|403|401|not found for API version|is not found|NOT_FOUND/i.test(fail.message) && !isTransientCode(fail.code, fail.message);\n    return { ok: false, kind: permanent ? 'PERMANENT' : (isTransientCode(fail.code, fail.message) ? 'TRANSIENT' : 'API_ERROR'), error: 'Gemini request failed: ' + fail.message };\n  }\n  if (!json || typeof json !== 'object') return { ok: false, kind: 'INVALID', error: 'Gemini returned a non-JSON response' };\n  if (json.promptFeedback && json.promptFeedback.blockReason) {\n    return { ok: false, kind: 'BLOCKED', error: 'Gemini blocked the prompt: ' + json.promptFeedback.blockReason };\n  }\n  const cand = Array.isArray(json.candidates) ? json.candidates[0] : null;\n  if (!cand) return { ok: false, kind: 'INVALID', error: 'Gemini response contained no candidates' };\n  const finish = asText(cand.finishReason);\n  const parts = (cand.content && Array.isArray(cand.content.parts)) ? cand.content.parts : [];\n  const text = parts.filter((p) => typeof p.text === 'string' && !p.thought).map((p) => p.text).join('');\n  if (finish && !['STOP', 'FINISH_REASON_UNSPECIFIED'].includes(finish)) {\n    return { ok: false, kind: finish === 'MAX_TOKENS' ? 'TRUNCATED' : 'BLOCKED', error: 'Gemini stopped with finishReason ' + finish, text, finishReason: finish };\n  }\n  if (!text.trim()) return { ok: false, kind: 'INVALID', error: 'Gemini returned empty text' };\n  return { ok: true, text, finishReason: finish, usage: json.usageMetadata || null, modelVersion: json.modelVersion || '' };\n}\nfunction extractJson(text) {\n  let t = asText(text).replace(/^﻿/, '');\n  const fence = /```(?:json)?\\s*([\\s\\S]*?)```/i.exec(t);\n  if (fence) t = fence[1].trim();\n  try { return { ok: true, value: JSON.parse(t) }; } catch (e) { /* try the outermost object */ }\n  const s = t.indexOf('{'); const e = t.lastIndexOf('}');\n  if (s >= 0 && e > s) { try { return { ok: true, value: JSON.parse(t.slice(s, e + 1)) }; } catch (err) { return { ok: false, error: 'Invalid JSON: ' + err.message }; } }\n  return { ok: false, error: 'No JSON object found in model output' };\n}\nfunction geminiRequest(system, userText, gen) {\n  return {\n    systemInstruction: { parts: [{ text: system }] },\n    contents: [{ role: 'user', parts: [{ text: userText }] }],\n    generationConfig: Object.assign({ responseMimeType: 'application/json' }, gen || {}),\n  };\n}\n// Adds a bounded corrective turn after an invalid structured response.\nfunction correctiveRequest(prev, badText, problems) {\n  const req = JSON.parse(JSON.stringify(prev));\n  req.contents.push({ role: 'model', parts: [{ text: truncate(badText || '(empty response)', 6000) }] });\n  req.contents.push({ role: 'user', parts: [{ text: 'Your previous response was rejected by automated validation for these reasons:\\n- ' + problems.join('\\n- ') + '\\n\\nReturn the COMPLETE corrected response again as one valid JSON object that follows the required schema exactly. Do not add commentary or code fences.' }] });\n  return req;\n}\nfunction assertLease(json, stage) {\n  if (json && json.lease_ok === false) {\n    throw new Error('LEASE_LOST at ' + stage + ': another execution now owns this job (' + JSON.stringify(json.detail || {}) + '). Stopping without further writes.');\n  }\n}\nfunction setOutcome(ctx, status, stage, reason, retryable) {\n  ctx.outcome = { status, stage, reason: redact(truncate(reason, 1500)), retryable: !!retryable };\n  return ctx;\n}\n\n// Keywords row for a released job (READY = bounded automatic retry,\n// ERROR = permanent or retry limit reached) or a recovered plagiarism report.\nconst j = $json;\nconst rc = j.runtime_config;\nconst tz = rc.timezone || 'Asia/Kolkata';\nreturn { json: {\n  Keyword_ID: j.keyword_id, Status: j.sheet_status, Processed_At: nowLocal(tz), Last_Error: truncate(j.sheet_last_error || '', 1500),\n  _spreadsheet_id: rc.spreadsheet_id, _sheet: rc.sheets.keywords, _article_id: j.article_id, _action: j.action,\n} };\n"
+      },
+      "id": "14aafb81-9cf8-4bfe-afdb-0ad470300242",
+      "name": "Build Keyword Status Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $json._spreadsheet_id }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $json._sheet }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Keyword_ID"
+          ],
+          "schema": [
+            {
+              "id": "Keyword_ID",
+              "displayName": "Keyword_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Target_Page_URL",
+              "displayName": "Target_Page_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Primary_Keyword",
+              "displayName": "Primary_Keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Supporting_Keywords",
+              "displayName": "Supporting_Keywords",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Search_Intent",
+              "displayName": "Search_Intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Target_Audience",
+              "displayName": "Target_Audience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Target_Location",
+              "displayName": "Target_Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Language",
+              "displayName": "Language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Processing_Started_At",
+              "displayName": "Processing_Started_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Processed_At",
+              "displayName": "Processed_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last_Error",
+              "displayName": "Last_Error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "80141816-0244-4b24-a6f8-8dfe6ddc5af6",
+      "name": "Update Keyword Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1820,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": null,
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT e.lease_ok, e.article_id, e.status, e.detail FROM seo_job_event($1, $2, 'SHEETS_SYNCED', $3::jsonb, 20) e",
+        "options": {
+          "queryReplacement": "={{ [ $('Build Keyword Status Row').item.json._article_id, 'recovery-' + $execution.id, JSON.stringify({ keywords: !$json.error, article_log: false }) ] }}"
+        }
+      },
+      "id": "e015d19c-a705-40f9-a2e1-cd175d34463b",
+      "name": "Mark Keyword Status Synced",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        2080,
+        200
+      ],
+      "credentials": {
+        "postgres": {
+          "id": null,
+          "name": "SEO PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.runtime_config.duplichecker_api_base }}/query-footprint/{{ encodeURIComponent($json.plagiarism.provider_hash) }}/{{ encodeURIComponent($json.plagiarism.provider_key) }}",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "05a42fef-f9c2-492e-af42-dc9fbf862760",
+      "name": "Poll Recovered Plagiarism Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        400
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ---- shared helpers (inlined into Code nodes by tools/build_workflows.js) ----\nfunction asText(v) { return v === undefined || v === null ? '' : String(v).trim(); }\nfunction redact(s) {\n  return asText(s)\n    .replace(/(\\b(?:key|token|api_key|apikey)=)[^&\\s\"']+/gi, '$1[REDACTED]')\n    .replace(/(\"?(?:token|apiKey|api_key|authorization)\"?\\s*[:=]\\s*\"?)[A-Za-z0-9._\\-]{8,}/gi, '$1[REDACTED]')\n    .replace(/(Bearer\\s+)[A-Za-z0-9._\\-]+/gi, '$1[REDACTED]')\n    .replace(/AIza[0-9A-Za-z_\\-]{20,}/g, '[REDACTED]');\n}\nfunction truncate(s, n) { s = asText(s); return s.length > n ? s.slice(0, n) + ' …[truncated]' : s; }\nfunction nowLocal(tz) { return DateTime.now().setZone(tz || 'Asia/Kolkata').toFormat('yyyy-MM-dd HH:mm:ss'); }\nfunction parseUrl(u) {\n  const m = /^(https?):\\/\\/([^\\/?#:@\\s]+)(?::(\\d+))?([^?#\\s]*)(\\?[^#\\s]*)?(#\\S*)?$/i.exec(asText(u));\n  if (!m) return null;\n  return { protocol: m[1].toLowerCase(), host: m[2].toLowerCase(), port: m[3] || '', path: m[4] || '/', query: m[5] || '', hash: m[6] || '' };\n}\nfunction hostAllowed(host, domains) {\n  host = asText(host).toLowerCase();\n  return (domains || []).some((d) => { d = asText(d).toLowerCase(); return host === d || host.endsWith('.' + d); });\n}\nfunction normalizeUrl(u) {\n  const p = parseUrl(u);\n  if (!p) return '';\n  let path = p.path.replace(/\\/{2,}/g, '/');\n  if (path.length > 1) path = path.replace(/\\/+$/, '');\n  return p.protocol + '://' + p.host + (p.port ? ':' + p.port : '') + (path || '/') + p.query;\n}\nfunction resolveUrl(href, base) {\n  href = asText(href).replace(/&amp;/g, '&');\n  if (!href || /^(mailto:|tel:|javascript:|data:|#)/i.test(href)) return '';\n  if (/^https?:\\/\\//i.test(href)) return href;\n  const b = parseUrl(base);\n  if (!b) return '';\n  const origin = b.protocol + '://' + b.host + (b.port ? ':' + b.port : '');\n  if (href.startsWith('//')) return b.protocol + ':' + href;\n  if (href.startsWith('/')) return origin + href;\n  const dir = b.path.endsWith('/') ? b.path : b.path.replace(/[^\\/]*$/, '');\n  const parts = (dir + href).split('/');\n  const out = [];\n  for (const seg of parts) { if (seg === '..') out.pop(); else if (seg !== '.') out.push(seg); }\n  return origin + out.join('/').replace(/^([^\\/])/, '/$1');\n}\n// Error object from an HTTP Request node that used \"On Error: Continue\".\nfunction httpFailure(json) {\n  if (!json || json.error === undefined) return null;\n  const e = json.error;\n  const msg = typeof e === 'string' ? e : (e.message || e.description || JSON.stringify(e));\n  const code = typeof e === 'object' ? (e.httpCode || e.statusCode || e.status || (e.cause && e.cause.status) || '') : '';\n  const desc = typeof e === 'object' ? asText(e.description) : '';\n  return { message: redact(msg + (desc && desc !== msg ? ' — ' + desc : '')), code: String(code) };\n}\nfunction isTransientCode(code, msg) {\n  return /^(408|409|425|429|5\\d\\d)$/.test(String(code)) || /timeout|timed out|ETIMEDOUT|ECONNRESET|ECONNREFUSED|EAI_AGAIN|socket hang up|overloaded|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg || '');\n}\n// Interprets a Gemini generateContent response (or HTTP failure item).\nfunction readGemini(json) {\n  const fail = httpFailure(json);\n  if (fail) {\n    const permanent = /API key not valid|API_KEY_INVALID|PERMISSION_DENIED|403|401|not found for API version|is not found|NOT_FOUND/i.test(fail.message) && !isTransientCode(fail.code, fail.message);\n    return { ok: false, kind: permanent ? 'PERMANENT' : (isTransientCode(fail.code, fail.message) ? 'TRANSIENT' : 'API_ERROR'), error: 'Gemini request failed: ' + fail.message };\n  }\n  if (!json || typeof json !== 'object') return { ok: false, kind: 'INVALID', error: 'Gemini returned a non-JSON response' };\n  if (json.promptFeedback && json.promptFeedback.blockReason) {\n    return { ok: false, kind: 'BLOCKED', error: 'Gemini blocked the prompt: ' + json.promptFeedback.blockReason };\n  }\n  const cand = Array.isArray(json.candidates) ? json.candidates[0] : null;\n  if (!cand) return { ok: false, kind: 'INVALID', error: 'Gemini response contained no candidates' };\n  const finish = asText(cand.finishReason);\n  const parts = (cand.content && Array.isArray(cand.content.parts)) ? cand.content.parts : [];\n  const text = parts.filter((p) => typeof p.text === 'string' && !p.thought).map((p) => p.text).join('');\n  if (finish && !['STOP', 'FINISH_REASON_UNSPECIFIED'].includes(finish)) {\n    return { ok: false, kind: finish === 'MAX_TOKENS' ? 'TRUNCATED' : 'BLOCKED', error: 'Gemini stopped with finishReason ' + finish, text, finishReason: finish };\n  }\n  if (!text.trim()) return { ok: false, kind: 'INVALID', error: 'Gemini returned empty text' };\n  return { ok: true, text, finishReason: finish, usage: json.usageMetadata || null, modelVersion: json.modelVersion || '' };\n}\nfunction extractJson(text) {\n  let t = asText(text).replace(/^﻿/, '');\n  const fence = /```(?:json)?\\s*([\\s\\S]*?)```/i.exec(t);\n  if (fence) t = fence[1].trim();\n  try { return { ok: true, value: JSON.parse(t) }; } catch (e) { /* try the outermost object */ }\n  const s = t.indexOf('{'); const e = t.lastIndexOf('}');\n  if (s >= 0 && e > s) { try { return { ok: true, value: JSON.parse(t.slice(s, e + 1)) }; } catch (err) { return { ok: false, error: 'Invalid JSON: ' + err.message }; } }\n  return { ok: false, error: 'No JSON object found in model output' };\n}\nfunction geminiRequest(system, userText, gen) {\n  return {\n    systemInstruction: { parts: [{ text: system }] },\n    contents: [{ role: 'user', parts: [{ text: userText }] }],\n    generationConfig: Object.assign({ responseMimeType: 'application/json' }, gen || {}),\n  };\n}\n// Adds a bounded corrective turn after an invalid structured response.\nfunction correctiveRequest(prev, badText, problems) {\n  const req = JSON.parse(JSON.stringify(prev));\n  req.contents.push({ role: 'model', parts: [{ text: truncate(badText || '(empty response)', 6000) }] });\n  req.contents.push({ role: 'user', parts: [{ text: 'Your previous response was rejected by automated validation for these reasons:\\n- ' + problems.join('\\n- ') + '\\n\\nReturn the COMPLETE corrected response again as one valid JSON object that follows the required schema exactly. Do not add commentary or code fences.' }] });\n  return req;\n}\nfunction assertLease(json, stage) {\n  if (json && json.lease_ok === false) {\n    throw new Error('LEASE_LOST at ' + stage + ': another execution now owns this job (' + JSON.stringify(json.detail || {}) + '). Stopping without further writes.');\n  }\n}\nfunction setOutcome(ctx, status, stage, reason, retryable) {\n  ctx.outcome = { status, stage, reason: redact(truncate(reason, 1500)), retryable: !!retryable };\n  return ctx;\n}\n\n// ---- DupliChecker response interpretation (fail closed) ----\n// Documented contract (https://www.duplichecker.com/api-documentation):\n//   POST /api/checkplag {token, data, rephrased} -> job info with hash + key\n//   GET  /api/query-footprint/{hash}/{key}      -> repeat while \"recall\" is true;\n//        the completed report has recall:false, plagPercent, uniquePercent,\n//        rephrasedPercent, exactMatchedPercent and details[] (matched webs).\n// Anything that does not match this contract is treated as FAILED, never PASS.\nfunction dcInterpret(json) {\n  const fail = httpFailure(json);\n  if (fail) return { state: 'FAILED', transient: isTransientCode(fail.code, fail.message), error: 'DupliChecker request failed: ' + fail.message };\n  const status = Number(json.statusCode || 0);\n  let body = json.body;\n  if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { /* not JSON */ } }\n  const text = typeof body === 'string' ? body : JSON.stringify(body || {});\n  if (status === 401 || status === 403) return { state: 'FAILED', permanent: true, error: 'DupliChecker rejected the API token (HTTP ' + status + ')' };\n  if (status === 402) return { state: 'FAILED', permanent: true, error: 'DupliChecker plan expired (HTTP 402)' };\n  if (status === 429) return { state: 'FAILED', transient: true, rateLimited: true, error: 'DupliChecker rate limit reached (HTTP 429)' };\n  if (status === 404) return { state: 'FAILED', error: 'DupliChecker job not found (HTTP 404); the hash may have expired' };\n  if (status >= 500) return { state: 'FAILED', transient: true, error: 'DupliChecker server error (HTTP ' + status + ')' };\n  if (status < 200 || status >= 300) return { state: 'FAILED', error: 'Unexpected DupliChecker HTTP status ' + status + ': ' + truncate(redact(text), 300) };\n  if (!body || typeof body !== 'object' || Array.isArray(body)) return { state: 'FAILED', error: 'Unrecognised DupliChecker response (not a JSON object): ' + truncate(redact(text), 300) };\n  const src = (body.data && typeof body.data === 'object' && !Array.isArray(body.data)) ? Object.assign({}, body, body.data) : body;\n  const num = (...vals) => { for (const v of vals) { if (v === undefined || v === null || v === '') continue; const n = Number(String(v).replace('%', '')); if (Number.isFinite(n)) return n; } return null; };\n  const bool = (v) => v === true || v === 1 || /^(true|1|yes)$/i.test(String(v));\n  const errText = asText(src.error || src.errors || ((src.status === false || src.success === false) ? (src.message || 'request rejected') : ''));\n  if (errText && !src.hash) {\n    const permanent = /token|unauthori|plan|expired|credit|word.?limit|limit exceeded|insufficient/i.test(errText);\n    return { state: 'FAILED', permanent, error: 'DupliChecker error: ' + truncate(redact(typeof errText === 'string' ? errText : JSON.stringify(errText)), 400) };\n  }\n  const hash = asText(src.hash);\n  const key = asText(src.key);\n  const plag = num(src.plagPercent, src.plag_percent, src.plagiarismPercent);\n  const unique = num(src.uniquePercent, src.unique_percent);\n  const rephrased = num(src.rephrasedPercent, src.rephrased_percent, src.paraphrasedPercent);\n  const exact = num(src.exactMatchedPercent, src.exactMatchPercent, src.exact_matched_percent);\n  const recallDefined = src.recall !== undefined && src.recall !== null && src.recall !== '';\n  if (recallDefined && bool(src.recall)) return { state: 'PENDING', hash, key };\n  if (plag !== null) {\n    if (plag < 0 || plag > 100 || (unique !== null && (unique < 0 || unique > 100))) {\n      return { state: 'FAILED', error: 'DupliChecker returned out-of-range percentages (plag ' + plag + ', unique ' + unique + ')' };\n    }\n    const details = Array.isArray(src.details) ? src.details : [];\n    const matches = details.filter((d) => d && typeof d === 'object' && !bool(d.unique)).map((d) => ({\n      text: truncate(asText(d.query || d.text || d.sentence), 600),\n      rephrased: d.rephrased !== undefined ? bool(d.rephrased) : null,\n      sources: (Array.isArray(d.webs) ? d.webs : (Array.isArray(d.sources) ? d.sources : [])).slice(0, 5)\n        .map((w) => ({ title: truncate(asText(w && (w.title || w.name)), 200), url: asText(w && (w.url || w.link)) })),\n    })).filter((m) => m.text);\n    return { state: 'COMPLETED', hash, key, plag, unique, rephrased, exact, matches: matches.slice(0, 40), match_count: matches.length,\n      details_recognised: Array.isArray(src.details), report_url: asText(src.report_url || src.reportUrl || src.url || '') };\n  }\n  if (hash && key) return { state: 'PENDING', hash, key, initial: true };\n  return { state: 'FAILED', error: 'Unrecognised DupliChecker response structure (no recall/hash/plagPercent): ' + truncate(redact(text), 300) };\n}\n// Internal acceptance policy (configurable). A low score alone does not prove\n// originality: the editorial \"Original Value\" check must also pass.\nfunction dcAccept(p, config) {\n  const reasons = [];\n  if (!p || p.status !== 'COMPLETED') reasons.push('no completed plagiarism report (' + (p ? p.status : 'missing') + (p && p.error ? ': ' + p.error : '') + ')');\n  else {\n    if (p.plag_percent > config.plagiarism_threshold_percent) reasons.push('reported plagiarism ' + p.plag_percent + '% exceeds the ' + config.plagiarism_threshold_percent + '% policy');\n    if (p.exact_percent !== null && p.exact_percent !== undefined && p.exact_percent > config.plagiarism_threshold_percent) reasons.push('exact-match share ' + p.exact_percent + '% exceeds ' + config.plagiarism_threshold_percent + '%');\n    if (p.rephrased_percent !== null && p.rephrased_percent !== undefined && p.rephrased_percent > config.plagiarism_max_rephrased_percent) reasons.push('rephrased-match share ' + p.rephrased_percent + '% exceeds ' + config.plagiarism_max_rephrased_percent + '%');\n    const unattributed = (p.matches || []).filter((m) => !m.attributed && m.text.split(/\\s+/).length >= 25);\n    if (unattributed.length) reasons.push(unattributed.length + ' matched passage(s) of 25+ words without attribution');\n  }\n  return { passed: reasons.length === 0, reasons };\n}\n\n// Follows the provider's callback mechanism for a timed-out report. Only a\n// COMPLETED report can pass; anything else stays REVIEW_REQUIRED.\nconst src = $('Normalize Recovery Item').item.json;\nconst rc = src.runtime_config;\nconst pl = src.plagiarism;\nconst r = dcInterpret($json);\nconst result = { status: r.state === 'COMPLETED' ? 'COMPLETED' : (r.state === 'PENDING' || r.transient ? 'PENDING' : 'FAILED') };\nif (r.state === 'COMPLETED') {\n  if (r.hash && r.hash !== pl.provider_hash) { result.status = 'FAILED'; result.error = 'report hash does not match the stored job'; }\n  else {\n    const p = { status: 'COMPLETED', plag_percent: r.plag, unique_percent: r.unique, rephrased_percent: r.rephrased, exact_percent: r.exact, matches: r.matches };\n    p.matches.forEach((m) => { m.attributed = false; });\n    const verdict = dcAccept(p, { plagiarism_threshold_percent: Number(pl.threshold_percent ?? rc.plagiarism_threshold_percent ?? 10),\n      plagiarism_max_rephrased_percent: Number(rc.plagiarism_max_rephrased_percent ?? 20) });\n    Object.assign(result, p, { passed: verdict.passed, reasons: verdict.reasons, threshold_percent: Number(pl.threshold_percent ?? rc.plagiarism_threshold_percent ?? 10),\n      result_label: verdict.passed ? 'PASS' : 'FAIL', provider_hash: pl.provider_hash, recovered: true,\n      report_reference: r.report_url || (rc.duplichecker_api_base || '').replace(/\\/+$/, '') + '/query-footprint/' + pl.provider_hash + '/' + pl.provider_key });\n    result.result = { match_count: r.match_count, matches: r.matches.slice(0, 20) };\n  }\n} else {\n  result.error = r.error || 'report still processing';\n  result.passed = false;\n}\nreturn { json: Object.assign({}, src, { recovered_result: result }) };\n"
+      },
+      "id": "1f11a9d7-ddd5-4556-a25f-e3aac8adf003",
+      "name": "Evaluate Recovered Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT r.action, r.sheet_status, r.sheet_last_error, r.job, $1 AS article_id, $5 AS keyword_id, $6::jsonb AS runtime_config FROM seo_recovery_plagiarism_result($1, $2, $3, $4::jsonb) r",
+        "options": {
+          "queryReplacement": "={{ [ $json.article_id, $json.plagiarism.check_id, $json.plagiarism.provider_hash, JSON.stringify($json.recovered_result), $json.keyword_id, JSON.stringify($json.runtime_config) ] }}"
+        }
+      },
+      "id": "32725588-f5a6-4525-ae25-fe147f1d0205",
+      "name": "Apply Recovered Report",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1820,
+        400
+      ],
+      "credentials": {
+        "postgres": {
+          "id": null,
+          "name": "SEO PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "fdcf7c69-a51b-45da-ae98-383fc24c72da",
+              "leftValue": "={{ !!$json.sheet_status }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f393f5f3-dd67-4f15-adcf-31a88c712313",
+      "name": "Sheet Update Needed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Final summary for one recovered job.\nreturn { json: { recovered: true, article_id: $json.article_id || null, event_ok: $json.lease_ok !== false, status: $json.status || null, detail: $json.detail || null } };\n"
+      },
+      "id": "4d2dc402-6d6e-4414-a3d3-944704d438b6",
+      "name": "Recovery Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Failure Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Failure Context": {
+      "main": [
+        [
+          {
+            "node": "Record Execution Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Execution Failure": {
+      "main": [
+        [
+          {
+            "node": "Normalize Recovery Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Recovery Sweep": {
+      "main": [
+        [
+          {
+            "node": "Recovery Sweep Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 30 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Recovery Sweep Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recovery Sweep Settings": {
+      "main": [
+        [
+          {
+            "node": "Run Recovery Sweep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Recovery Sweep": {
+      "main": [
+        [
+          {
+            "node": "Normalize Recovery Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Recovery Item": {
+      "main": [
+        [
+          {
+            "node": "Route Recovery Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Recovery Action": {
+      "main": [
+        [
+          {
+            "node": "Build Reconciliation Rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Keyword Status Row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Poll Recovered Plagiarism Report",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Recovery Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Reconciliation Rows": {
+      "main": [
+        [
+          {
+            "node": "Reconcile Article_Log Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reconcile Article_Log Row": {
+      "main": [
+        [
+          {
+            "node": "Reconcile Article_Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reconcile Article_Log": {
+      "main": [
+        [
+          {
+            "node": "Reconcile Keywords Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reconcile Keywords Row": {
+      "main": [
+        [
+          {
+            "node": "Reconcile Keywords Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reconcile Keywords Status": {
+      "main": [
+        [
+          {
+            "node": "Mark Reconciled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Reconciled": {
+      "main": [
+        [
+          {
+            "node": "Recovery Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Keyword Status Row": {
+      "main": [
+        [
+          {
+            "node": "Update Keyword Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Keyword Status": {
+      "main": [
+        [
+          {
+            "node": "Mark Keyword Status Synced",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Keyword Status Synced": {
+      "main": [
+        [
+          {
+            "node": "Recovery Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Recovered Plagiarism Report": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Recovered Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Recovered Report": {
+      "main": [
+        [
+          {
+            "node": "Apply Recovered Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Recovered Report": {
+      "main": [
+        [
+          {
+            "node": "Sheet Update Needed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheet Update Needed?": {
+      "main": [
+        [
+          {
+            "node": "Build Keyword Status Row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Recovery Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata",
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

@@ -1,0 +1,70 @@
+{
+  "_comment": "Reference copy of the values held in the 'Configuration' Code node of each workflow. Edit them in n8n (open the workflow, open the 'Configuration' node). This file is documentation only: n8n does not read it, and it must never contain secrets (API keys and tokens live in n8n credentials).",
+  "workflow_01_brand_rag_ingestion": {
+    "brand_id": "hr-remedy-india",
+    "brand_name": "HR Remedy India",
+    "official_website": "https://www.hrremedyindia.com/",
+    "official_domains": ["hrremedyindia.com"],
+    "timezone": "Asia/Kolkata",
+    "spreadsheet_id": "171UZWnNYKReJSQjqmW6QPA_Hptu_usIS25wq589z8Mg",
+    "sheets": { "brand_knowledge": "Brand_Knowledge" },
+    "allow_spreadsheet_change": false,
+    "gemini_api_base": "https://generativelanguage.googleapis.com/v1beta",
+    "embedding_model": "gemini-embedding-001",
+    "embedding_dimensions": 768,
+    "max_content_chars": 7000
+  },
+  "workflow_02_seo_article_automation": {
+    "brand_id": "hr-remedy-india",
+    "brand_name": "HR Remedy India",
+    "official_website": "https://www.hrremedyindia.com/",
+    "timezone": "Asia/Kolkata",
+    "spreadsheet_id": "171UZWnNYKReJSQjqmW6QPA_Hptu_usIS25wq589z8Mg",
+    "sheets": { "keywords": "Keywords", "brand_knowledge": "Brand_Knowledge", "article_log": "Article_Log" },
+    "allow_spreadsheet_change": false,
+    "allowed_target_domains": ["hrremedyindia.com"],
+    "page_min_words": 120,
+    "gemini_api_base": "https://generativelanguage.googleapis.com/v1beta",
+    "gemini_text_model": "auto",
+    "gemini_auto_tier_preference": ["flash", "pro"],
+    "gemini_max_output_tokens": 32768,
+    "embedding_model": "gemini-embedding-001",
+    "embedding_dimensions": 768,
+    "rag_top_k": 8,
+    "rag_min_similarity": 0.45,
+    "rag_min_relevant_chunks": 2,
+    "rag_always_include_categories": ["Brand Voice", "Company Profile"],
+    "max_attempts": 3,
+    "target_min_words": 900,
+    "target_max_words": 2200,
+    "duplichecker_api_base": "https://www.duplichecker.com/api",
+    "plagiarism_threshold_percent": 10,
+    "plagiarism_max_rephrased_percent": 20,
+    "plagiarism_check_rephrased": true,
+    "plagiarism_max_words": 5000,
+    "plagiarism_poll_interval_seconds": 20,
+    "plagiarism_max_polls": 30,
+    "plagiarism_min_account_words": 3000,
+    "docs_api_base": "https://docs.googleapis.com/v1",
+    "master_doc_title": "HR Remedy India — SEO Article Library",
+    "master_doc_max_chars": 900000,
+    "lease_minutes": 20
+  },
+  "workflow_03_error_recovery": {
+    "_comment": "Values live in the 'Recovery Sweep Settings' node. The spreadsheet ID and DupliChecker settings are read from PostgreSQL (seo_settings.runtime_config), written by workflow 02 on every run, so there is no second copy to keep in sync.",
+    "grace_minutes": 10,
+    "max_recovery_attempts": 3,
+    "plagiarism_hash_valid_hours": 6.5
+  },
+  "schedules": {
+    "workflow_02_daily_schedule": "08:00 Asia/Kolkata (node 'Daily Schedule 08:00 IST', disabled on import)",
+    "workflow_03_recovery_sweep": "every 30 minutes (node 'Every 30 Minutes', disabled on import)"
+  },
+  "credentials_by_name": {
+    "postgres": "SEO PostgreSQL",
+    "googleSheetsOAuth2Api": "Google Sheets account",
+    "googleDocsOAuth2Api": "Google Docs account",
+    "googlePalmApi": "Google Gemini(PaLM) Api account",
+    "httpCustomAuth": "DupliChecker API"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "_comment": "NON-SECRET configuration reference. These values live in the Code nodes 'Workflow Configuration' (02), 'Ingestion Configuration' (01) and 'Recovery Configuration' + 'Recovery Configuration (Error Path)' (03). Secrets (API keys, OAuth, DB passwords) are NEVER placed here - they are n8n credentials. See configuration/required_credentials.md.",
+
+  "BRAND_ID": "KARGAR",
+  "BRAND_NAMES": ["KARGAR", "KARGAR Facility Management"],
+
+  "SPREADSHEET_ID": "REPLACE_WITH_GOOGLE_SPREADSHEET_ID",
+  "KEYWORDS_SHEET": "Keywords",
+  "BRAND_KNOWLEDGE_SHEET": "Brand_Knowledge",
+  "ARTICLE_LOG_SHEET": "Article_Log",
+  "MASTER_DOC_ID": "REPLACE_WITH_MASTER_GOOGLE_DOC_ID",
+  "DOCS_API_BASE": "https://docs.googleapis.com/v1",
+
+  "GEMINI_API_BASE": "https://generativelanguage.googleapis.com/v1beta",
+  "GEMINI_PROMPT_MODEL": "gemini-3.8-flash",
+  "GEMINI_WRITER_MODEL": "gemini-3.8-flash",
+  "GEMINI_EVALUATOR_MODEL": "gemini-3.8-flash",
+  "GEMINI_REVISER_MODEL": "gemini-3.8-flash",
+  "GEMINI_MAX_OUTPUT_TOKENS": 32768,
+  "EMBEDDING_MODEL": "gemini-embedding-001",
+  "EMBEDDING_DIMENSIONS": 768,
+
+  "RAG_TOP_K": 6,
+  "RAG_MIN_SIMILARITY": 0.55,
+  "RAG_MIN_RELEVANT_CHUNKS": 2,
+  "RAG_PINNED_CATEGORIES": ["BRAND_VOICE", "APPROVED_CLAIMS", "INTERNAL_LINKS", "SERVICE_AREAS"],
+  "RAG_PINNED_PER_CATEGORY": 2,
+  "MAX_CHUNK_CHARS": 3000,
+
+  "MAX_ARTICLE_ATTEMPTS": 3,
+  "MAX_ARTICLES_PER_RUN": 5,
+  "MAX_TECHNICAL_FAILURES": 3,
+  "CLAIM_LEASE_MINUTES": 180,
+
+  "ALLOWED_URL_SCHEMES": ["https:", "http:"],
+  "ALLOWED_TARGET_DOMAINS": [],
+  "PAGE_MIN_WORDS": 150,
+  "PAGE_FETCH_TIMEOUT_MS": 30000,
+
+  "ARTICLE_MIN_WORDS": 600,
+  "REQUIRE_TARGET_PAGE_LINK": true,
+  "DETERMINISTIC_CLAIM_CHECKS": "enforce",
+  "MAX_EXTERNAL_SOURCES_CHECKED": 10,
+
+  "PLAGIARISM_PROVIDER": "duplichecker",
+  "PLAGIARISM_CHECK_URL": "https://www.duplichecker.com/api/checkplag",
+  "PLAGIARISM_INFO_URL": "https://www.duplichecker.com/api/info",
+  "PLAGIARISM_PREFLIGHT_ENABLED": true,
+  "PLAGIARISM_REPHRASED_DETECTION": true,
+  "PLAGIARISM_THRESHOLD_PERCENT": 10,
+  "PLAGIARISM_MAX_MATCHED_PASSAGE_WORDS": 40,
+  "PLAGIARISM_MAX_WORDS_PER_REQUEST": 1000,
+  "PLAGIARISM_PERCENT_FIELD": "",
+  "PLAGIARISM_POLL_URL_TEMPLATE": "",
+  "PLAGIARISM_MAX_POLLS": 10,
+  "PLAGIARISM_POLL_INTERVAL_SECONDS": 30,
+
+  "DOC_LOCK_TTL_SECONDS": 300,
+  "DOC_LOCK_MAX_WAITS": 8,
+  "DOC_LOCK_WAIT_SECONDS": 15,
+  "RECONCILE_MIN_AGE_MINUTES": 15,
+
+  "TIMEZONE": "Asia/Kolkata",
+  "SCHEDULES": {
+    "01_Brand_RAG_Ingestion": "30 7 * * * (07:30 IST daily)",
+    "02_SEO_Article_Automation": "0 8 * * * (08:00 IST daily)",
+    "03_Error_Recovery": "every 30 minutes"
+  }
+}

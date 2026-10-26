@@ -1,0 +1,6 @@
+Knowledge_ID,Category,Content,Source_URL,Approved,Last_Updated
+KB-001,COMPANY_PROFILE,"REPLACE WITH A VERIFIED, APPROVED STATEMENT ABOUT THE COMPANY (who you are, what you do, where).",https://example.com/about,FALSE,
+KB-002,SERVICES,"REPLACE WITH A VERIFIED DESCRIPTION OF ONE SERVICE (e.g. housekeeping scope, how it is delivered).",https://example.com/housekeeping,FALSE,
+KB-003,BRAND_VOICE,"REPLACE WITH YOUR WRITING GUIDELINES (tone, words to avoid, formatting preferences).",,FALSE,
+KB-004,INTERNAL_LINKS,"REPLACE WITH: <page purpose>: <full URL of an existing internal page the writer may link to>",,FALSE,
+KB-005,SERVICE_AREAS,"REPLACE WITH THE VERIFIED CITIES/AREAS YOU SERVE.",,FALSE,

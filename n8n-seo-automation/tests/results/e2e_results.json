@@ -1,0 +1,1312 @@
+{
+  "generated_at": "2026-10-26T05:06:23.354Z",
+  "n8n": "2.44.6",
+  "passed": 30,
+  "failed": 0,
+  "results": [
+    {
+      "id": "I1",
+      "title": "Ingestion: approved rows embedded (RETRIEVAL_DOCUMENT, 768 dims) and stored; unapproved skipped; invalid row logged",
+      "status": "PASSED",
+      "evidence": {
+        "http": 200,
+        "response": {
+          "run_id": "1",
+          "status": "PARTIAL",
+          "brand_id": "KARGAR",
+          "rows_read": 8,
+          "rows_approved": 7,
+          "rows_invalid": 1,
+          "chunks_inserted": 6,
+          "chunks_updated": 0,
+          "chunks_unchanged": 0,
+          "chunks_deactivated": 0,
+          "errors": 1
+        },
+        "chunks": 6,
+        "embedCalls": 6,
+        "ingErrors": 1
+      }
+    },
+    {
+      "id": "I2",
+      "title": "Ingestion idempotency: re-run re-embeds nothing and inserts no duplicates",
+      "status": "PASSED",
+      "evidence": {
+        "embedCalls": 0,
+        "run": {
+          "run_id": 2,
+          "brand_id": "KARGAR",
+          "execution_id": "2",
+          "started_at": "2026-10-26T05:03:09.200451+00:00",
+          "finished_at": "2026-10-26T05:03:09.485937+00:00",
+          "rows_read": 8,
+          "rows_approved": 7,
+          "rows_invalid": 1,
+          "chunks_inserted": 0,
+          "chunks_updated": 0,
+          "chunks_unchanged": 6,
+          "chunks_deactivated": 0,
+          "errors": 1,
+          "status": "PARTIAL",
+          "summary_json": {}
+        }
+      }
+    },
+    {
+      "id": "I3",
+      "title": "Ingestion: changed row re-embedded/updated; newly unapproved row soft-deactivated (not deleted)",
+      "status": "PASSED",
+      "evidence": {
+        "embedCalls": 1,
+        "run": {
+          "run_id": 3,
+          "brand_id": "KARGAR",
+          "execution_id": "3",
+          "started_at": "2026-10-26T05:03:09.722696+00:00",
+          "finished_at": "2026-10-26T05:03:10.025278+00:00",
+          "rows_read": 8,
+          "rows_approved": 6,
+          "rows_invalid": 1,
+          "chunks_inserted": 0,
+          "chunks_updated": 1,
+          "chunks_unchanged": 4,
+          "chunks_deactivated": 1,
+          "errors": 1,
+          "status": "PARTIAL",
+          "summary_json": {}
+        },
+        "kb006": "false:SOURCE_NOT_APPROVED"
+      }
+    },
+    {
+      "id": "T1",
+      "title": "Single input: full pipeline -> APPROVED, appended once, Sheets + Article_Log + DB consistent",
+      "status": "PASSED",
+      "evidence": {
+        "response": {
+          "run_id": "5",
+          "finished_at": "2026-10-26T05:03:15.181Z",
+          "processed": 1,
+          "outcomes": {
+            "APPROVED": 1
+          },
+          "details": [
+            {
+              "keyword_id": "KW001",
+              "article_id": "ART-20261026-933E812A84",
+              "outcome": "APPROVED"
+            }
+          ]
+        },
+        "db": {
+          "status": "APPROVED",
+          "current_article_id": "ART-20261026-933E812A84",
+          "last_error_class": null,
+          "last_error": null,
+          "technical_failures": 0,
+          "article_status": "APPROVED",
+          "attempt_count": 1,
+          "sheet_synced": true,
+          "ledger_state": "VERIFIED"
+        },
+        "sheet": {
+          "Keyword_ID": "KW001",
+          "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+          "Primary_Keyword": "housekeeping services pune",
+          "Supporting_Keywords": "office cleaning, commercial housekeeping",
+          "Search_Intent": "Commercial",
+          "Target_Audience": "Office managers",
+          "Target_Location": "Pune",
+          "Language": "English",
+          "Priority": "High",
+          "Status": "APPROVED",
+          "Processing_Started_At": "2026-10-26 10:33:11",
+          "Processed_At": "2026-10-26 10:33:14",
+          "Last_Error": ""
+        },
+        "log": {
+          "Article_ID": "ART-20261026-933E812A84",
+          "Keyword_ID": "KW001",
+          "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+          "Primary_Keyword": "housekeeping services pune",
+          "Article_Title": "A practical guide to housekeeping services pune",
+          "SEO_Title": "Practical Guide to housekeeping services pune",
+          "Meta_Description": "Learn how to evaluate housekeeping services pune: scope, supervision, consumables and questions to ask before you choose a provider for your office or facility.",
+          "URL_Slug": "housekeeping-services-pune-guide",
+          "Quality_Status": "PASS",
+          "EETA_Report": "{\"Checks\": {\"Expertise_Check\": \"PASS\", \"Experience_Check\": \"PASS\", \"Readability_Check\": \"PASS\", \"SEO_Relevance_Check\": \"PASS\", \"Original_Value_Check\": \"PASS\", \"Trustworthiness_Check\": \"PASS\", \"Brand_Compliance_Check\": \"PASS\", \"Factual_Accuracy_Check\": \"PASS\", \"Authoritativeness_Check\": \"PASS\", \"Target_Page_Alignment_Check\": \"PASS\"}, \"Overall\": \"PASS\", \"Unsupported_Claims\": 0}",
+          "Plagiarism_Percent": "0.00",
+          "Plagiarism_Status": "PASS",
+          "Plagiarism_Report_URL": "postgres:seo.article_attempts/ART-20261026-933E812A84/1",
+          "Attempts": 1,
+          "Google_Doc_ID": "TEST-DOC",
+          "Google_Doc_URL": "https://docs.google.com/document/d/TEST-DOC/edit",
+          "Status": "APPROVED",
+          "Error": "",
+          "Created_At": "2026-10-26 10:33:11",
+          "Updated_At": "2026-10-26 10:33:14"
+        },
+        "markers": 1,
+        "ops": [
+          "info",
+          "read",
+          "update",
+          "get",
+          "embed",
+          "prompt_creator",
+          "update",
+          "writer",
+          "update",
+          "update",
+          "get",
+          "evaluator",
+          "update",
+          "check",
+          "get",
+          "batchUpdate",
+          "get",
+          "update",
+          "appendOrUpdate"
+        ]
+      }
+    },
+    {
+      "id": "T3",
+      "title": "Duplicate input: completed record (stays APPROVED, note added) and same keyword+URL under a new ID (SKIPPED_DUPLICATE) are skipped; no new generation or Docs write",
+      "status": "PASSED",
+      "evidence": {
+        "kw001": {
+          "Keyword_ID": "KW001",
+          "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+          "Primary_Keyword": "housekeeping services pune",
+          "Supporting_Keywords": "office cleaning, commercial housekeeping",
+          "Search_Intent": "Commercial",
+          "Target_Audience": "Office managers",
+          "Target_Location": "Pune",
+          "Language": "English",
+          "Priority": "High",
+          "Status": "APPROVED",
+          "Processing_Started_At": "2026-10-26 10:33:11",
+          "Processed_At": "2026-10-26 10:33:16",
+          "Last_Error": "Re-submission skipped (no duplicate generated): article ART-20261026-933E812A84 is already approved. Keyword already has an approved article; set Regenerate=TRUE to authorise a new one"
+        },
+        "kw001b": {
+          "Keyword_ID": "KW001B",
+          "Target_Page_URL": "http://kargar-test.example:8787/housekeeping/",
+          "Primary_Keyword": "Housekeeping  Services Pune",
+          "Supporting_Keywords": "office cleaning, commercial housekeeping",
+          "Search_Intent": "Commercial",
+          "Target_Audience": "Office managers",
+          "Target_Location": "Pune",
+          "Language": "English",
+          "Priority": "High",
+          "Status": "SKIPPED_DUPLICATE",
+          "Processing_Started_At": "",
+          "Processed_At": "2026-10-26 10:33:15",
+          "Last_Error": "Same keyword and target URL as KW001 in this batch"
+        },
+        "ops": [
+          "info",
+          "read",
+          "update",
+          "update"
+        ]
+      }
+    },
+    {
+      "id": "T2",
+      "title": "Five inputs: five independent articles, each appended once and correctly associated with its keyword/URL",
+      "status": "PASSED",
+      "evidence": {
+        "rows": [
+          {
+            "id": "KW101",
+            "sheet": "APPROVED",
+            "db": {
+              "status": "APPROVED",
+              "current_article_id": "ART-20261026-AE2ABB91FA",
+              "last_error_class": null,
+              "last_error": null,
+              "technical_failures": 0,
+              "article_status": "APPROVED",
+              "attempt_count": 1,
+              "sheet_synced": true,
+              "ledger_state": "VERIFIED"
+            }
+          },
+          {
+            "id": "KW102",
+            "sheet": "APPROVED",
+            "db": {
+              "status": "APPROVED",
+              "current_article_id": "ART-20261026-EB4023754E",
+              "last_error_class": null,
+              "last_error": null,
+              "technical_failures": 0,
+              "article_status": "APPROVED",
+              "attempt_count": 1,
+              "sheet_synced": true,
+              "ledger_state": "VERIFIED"
+            }
+          },
+          {
+            "id": "KW103",
+            "sheet": "APPROVED",
+            "db": {
+              "status": "APPROVED",
+              "current_article_id": "ART-20261026-E8C395FE3D",
+              "last_error_class": null,
+              "last_error": null,
+              "technical_failures": 0,
+              "article_status": "APPROVED",
+              "attempt_count": 1,
+              "sheet_synced": true,
+              "ledger_state": "VERIFIED"
+            }
+          },
+          {
+            "id": "KW104",
+            "sheet": "APPROVED",
+            "db": {
+              "status": "APPROVED",
+              "current_article_id": "ART-20261026-D28392B7EF",
+              "last_error_class": null,
+              "last_error": null,
+              "technical_failures": 0,
+              "article_status": "APPROVED",
+              "attempt_count": 1,
+              "sheet_synced": true,
+              "ledger_state": "VERIFIED"
+            }
+          },
+          {
+            "id": "KW105",
+            "sheet": "APPROVED",
+            "db": {
+              "status": "APPROVED",
+              "current_article_id": "ART-20261026-CB8EC2372D",
+              "last_error_class": null,
+              "last_error": null,
+              "technical_failures": 0,
+              "article_status": "APPROVED",
+              "attempt_count": 1,
+              "sheet_synced": true,
+              "ledger_state": "VERIFIED"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "T4",
+      "title": "Target-page retrieval failure (404 and JS-only page): REVIEW_REQUIRED with clear reason, no analysis or article generated",
+      "status": "PASSED",
+      "evidence": {
+        "d201": {
+          "status": "REVIEW_REQUIRED",
+          "current_article_id": "ART-20261026-0005076E24",
+          "last_error_class": "HUMAN_REVIEW",
+          "last_error": "PAGE_HTTP_404: target page is not accessible (check URL, authentication or robots/firewall rules - access controls are not bypassed)",
+          "technical_failures": 0,
+          "article_status": "REVIEW_REQUIRED",
+          "attempt_count": 0,
+          "sheet_synced": false,
+          "ledger_state": null
+        },
+        "d202": {
+          "status": "REVIEW_REQUIRED",
+          "current_article_id": "ART-20261026-D2AE449FFD",
+          "last_error_class": "HUMAN_REVIEW",
+          "last_error": "PAGE_REQUIRES_JS_RENDERING: only 0 words in the server HTML; the page appears to be rendered client-side. Configure server-side rendering/prerendering for the page or supply its content manually.",
+          "technical_failures": 0,
+          "article_status": "REVIEW_REQUIRED",
+          "attempt_count": 0,
+          "sheet_synced": false,
+          "ledger_state": null
+        },
+        "sheet": [
+          {
+            "Keyword_ID": "KW201",
+            "Target_Page_URL": "http://kargar-test.example:8787/missing",
+            "Primary_Keyword": "housekeeping contract pune",
+            "Supporting_Keywords": "office cleaning, commercial housekeeping",
+            "Search_Intent": "Commercial",
+            "Target_Audience": "Office managers",
+            "Target_Location": "Pune",
+            "Language": "English",
+            "Priority": "High",
+            "Status": "REVIEW_REQUIRED",
+            "Processing_Started_At": "2026-10-26 10:33:34",
+            "Processed_At": "2026-10-26 10:33:34",
+            "Last_Error": "PAGE_HTTP_404: target page is not accessible (check URL, authentication or robots/firewall rules - access controls are not bypassed)"
+          },
+          {
+            "Keyword_ID": "KW202",
+            "Target_Page_URL": "http://kargar-test.example:8787/js-app",
+            "Primary_Keyword": "housekeeping agency pune",
+            "Supporting_Keywords": "office cleaning, commercial housekeeping",
+            "Search_Intent": "Commercial",
+            "Target_Audience": "Office managers",
+            "Target_Location": "Pune",
+            "Language": "English",
+            "Priority": "High",
+            "Status": "REVIEW_REQUIRED",
+            "Processing_Started_At": "2026-10-26 10:33:35",
+            "Processed_At": "2026-10-26 10:33:35",
+            "Last_Error": "PAGE_REQUIRES_JS_RENDERING: only 0 words in the server HTML; the page appears to be rendered client-side. Configure server-side rendering/prerendering for the page or supply its content manually."
+          }
+        ]
+      }
+    },
+    {
+      "id": "T5",
+      "title": "Missing brand knowledge: REVIEW_REQUIRED (INSUFFICIENT_BRAND_CONTEXT), Gemini never asked to write",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "REVIEW_REQUIRED",
+          "current_article_id": "ART-20261026-0D192BADE0",
+          "last_error_class": "HUMAN_REVIEW",
+          "last_error": "INSUFFICIENT_BRAND_CONTEXT: only 0 approved knowledge chunk(s) reached similarity 0.55 for this keyword (minimum 2). Add approved Brand_Knowledge rows for this topic and re-run ingestion; no company information was invented.",
+          "technical_failures": 0,
+          "article_status": "REVIEW_REQUIRED",
+          "attempt_count": 0,
+          "sheet_synced": false,
+          "ledger_state": null
+        },
+        "ops": [
+          "info",
+          "read",
+          "update",
+          "get",
+          "embed",
+          "update",
+          "appendOrUpdate"
+        ]
+      }
+    },
+    {
+      "id": "T4b",
+      "title": "Keyword/page mismatch flagged for review instead of generating irrelevant content",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "REVIEW_REQUIRED",
+          "current_article_id": "ART-20261026-9E9210F3B9",
+          "last_error_class": "HUMAN_REVIEW",
+          "last_error": "KEYWORD_PAGE_MISMATCH: The page is about facility services; the keyword is about car dealerships.",
+          "technical_failures": 0,
+          "article_status": "REVIEW_REQUIRED",
+          "attempt_count": 0,
+          "sheet_synced": false,
+          "ledger_state": null
+        }
+      }
+    },
+    {
+      "id": "T6",
+      "title": "Editorial failure: evaluator FAILs unsupported claims, correction report sent to reviser, revised article re-evaluated and approved",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "APPROVED",
+          "current_article_id": "ART-20261026-9885789B07",
+          "last_error_class": null,
+          "last_error": null,
+          "technical_failures": 0,
+          "article_status": "APPROVED",
+          "attempt_count": 2,
+          "sheet_synced": true,
+          "ledger_state": "VERIFIED"
+        },
+        "attempts": [
+          {
+            "n": 1,
+            "editorial": "FAIL",
+            "plag": null,
+            "outcome": "FAILED_EDITORIAL"
+          },
+          {
+            "n": 2,
+            "editorial": "PASS",
+            "plag": "PASS",
+            "outcome": "PASSED"
+          }
+        ],
+        "reviserSaw": "[\n \"Trustworthiness_Check=FAIL: Claims an award and ISO 9001 certification not present in brand knowledge.\",\n \"Original_Value_Check=FAIL: Generic content.\",\n \"Overall_Status=FAIL\",\n \"UNSUPPORTED_CLAIM(CRITICAL): \\\"KARGAR is an award-winning ISO 9001 certified company.\\\" - Not in brand knowledge\",\n \"UNSUPPORTED_BRAND_CREDENTIAL: \\\"award-winning\\\" is not documented in brand knowledge | \\\"KARGAR is an award-winning ISO 9001 certified company.\\\"\"\n]"
+      }
+    },
+    {
+      "id": "T13",
+      "title": "Unsupported brand claim (\"500+ clients\") rejected even though the model evaluator said PASS; revised before approval",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "APPROVED",
+          "current_article_id": "ART-20261026-C7BE84014A",
+          "last_error_class": null,
+          "last_error": null,
+          "technical_failures": 0,
+          "article_status": "APPROVED",
+          "attempt_count": 2,
+          "sheet_synced": true,
+          "ledger_state": "VERIFIED"
+        },
+        "attempts": [
+          {
+            "n": 1,
+            "editorial": "FAIL",
+            "failed": [
+              "UNSUPPORTED_BRAND_STATISTIC: number \"500+ clients\" is not documented in brand knowledge | \"KARGAR has served 500+ clients across Pune.\""
+            ]
+          },
+          {
+            "n": 2,
+            "editorial": "PASS",
+            "failed": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "T7",
+      "title": "Plagiarism failure: revision triggered, revised text re-evaluated AND re-scanned (new report for new text), then approved",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "APPROVED",
+          "current_article_id": "ART-20261026-ADBA7DAB55",
+          "last_error_class": null,
+          "last_error": null,
+          "technical_failures": 0,
+          "article_status": "APPROVED",
+          "attempt_count": 2,
+          "sheet_synced": true,
+          "ledger_state": "VERIFIED"
+        },
+        "attempts": [
+          {
+            "n": 1,
+            "editorial": "PASS",
+            "plag": "FAIL",
+            "pct": 51.07,
+            "sha": "1b97d531399e",
+            "scanned": "1b97d531399e"
+          },
+          {
+            "n": 2,
+            "editorial": "PASS",
+            "plag": "PASS",
+            "pct": 0,
+            "sha": "37bd1808b61f",
+            "scanned": "37bd1808b61f"
+          }
+        ],
+        "scans": [
+          {
+            "service": "plagiarism",
+            "op": "check",
+            "sha": "dbe9d63a688c",
+            "rephrased": "true",
+            "words": 513
+          },
+          {
+            "service": "plagiarism",
+            "op": "check",
+            "sha": "724b08d99786",
+            "rephrased": "true",
+            "words": 498
+          }
+        ]
+      }
+    },
+    {
+      "id": "T8",
+      "title": "Plagiarism API auth failure: fail closed - not approved, no Docs write, CONFIGURATION error recorded",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "ERROR",
+          "current_article_id": "ART-20261026-2CC8E8074E",
+          "last_error_class": "CONFIGURATION",
+          "last_error": "PLAGIARISM_CHECK_FAILED (chunk 0): Plagiarism API authentication failed (HTTP 401)",
+          "technical_failures": 1,
+          "article_status": "ERROR",
+          "attempt_count": 1,
+          "sheet_synced": false,
+          "ledger_state": null
+        },
+        "sheet": {
+          "Keyword_ID": "KW601",
+          "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+          "Primary_Keyword": "pest control services pune",
+          "Supporting_Keywords": "office cleaning, commercial housekeeping",
+          "Search_Intent": "Commercial",
+          "Target_Audience": "Office managers",
+          "Target_Location": "Pune",
+          "Language": "English",
+          "Priority": "High",
+          "Status": "ERROR",
+          "Processing_Started_At": "2026-10-26 10:33:56",
+          "Processed_At": "2026-10-26 10:33:58",
+          "Last_Error": "[CONFIGURATION] PLAGIARISM: PLAGIARISM_CHECK_FAILED (chunk 0): Plagiarism API authentication failed (HTTP 401) (execution 29)"
+        }
+      }
+    },
+    {
+      "id": "T9",
+      "title": "Repeated failure: stops at MAX_ARTICLE_ATTEMPTS=3 (3 evaluations, 2 revisions) and marks REVIEW_REQUIRED; latest article and reports kept",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "REVIEW_REQUIRED",
+          "current_article_id": "ART-20261026-8BD199671B",
+          "last_error_class": "HUMAN_REVIEW",
+          "last_error": "MAX_ARTICLE_ATTEMPTS (3) reached; last failure: Trustworthiness_Check=FAIL: Contains generic, unsupported performance claims. || Original_Value_Check=FAIL: Generic content. || Overall_Status=FAIL",
+          "technical_failures": 0,
+          "article_status": "REVIEW_REQUIRED",
+          "attempt_count": 3,
+          "sheet_synced": false,
+          "ledger_state": null
+        },
+        "evaluations": 3,
+        "revisions": 2,
+        "log": {
+          "Article_ID": "ART-20261026-8BD199671B",
+          "Keyword_ID": "KW701",
+          "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+          "Primary_Keyword": "deep cleaning services pune",
+          "Article_Title": "A practical guide to deep cleaning services pune",
+          "SEO_Title": "Practical Guide to deep cleaning services pune",
+          "Meta_Description": "Learn how to evaluate deep cleaning services pune: scope, supervision, consumables and questions to ask before you choose a provider for your office or facility.",
+          "URL_Slug": "deep-cleaning-services-pune-guide",
+          "Quality_Status": "FAIL",
+          "EETA_Report": "{\"attempt_no\":3,\"editorial_status\":\"FAIL\",\"checks\":{\"Experience_Check\":\"PASS\",\"Expertise_Check\":\"PASS\",\"Authoritativeness_Check\":\"PASS\",\"Trustworthiness_Check\":\"FAIL\",\"Factual_Accuracy_Check\":\"PASS\",\"SEO_Relevance_Check\":\"PASS\",\"Target_Page_Alignment_Check\":\"PASS\",\"Original_Value_Check\":\"FAIL\",\"Readability_Check\":\"PASS\",\"Brand_Compliance_Check\":\"PASS\"},\"failed_conditions\":[\"Trustworthiness_Check=FAIL: Contains generic, unsupported performance claims.\",\"Original_Value_Check=FAIL: Generic content.\",\"Overall_Status=FAIL\"]}",
+          "Plagiarism_Percent": "",
+          "Plagiarism_Status": "",
+          "Plagiarism_Report_URL": "",
+          "Attempts": 3,
+          "Google_Doc_ID": "",
+          "Google_Doc_URL": "",
+          "Status": "REVIEW_REQUIRED",
+          "Error": "MAX_ARTICLE_ATTEMPTS (3) reached; last failure: Trustworthiness_Check=FAIL: Contains generic, unsupported performance claims. || Original_Value_Check=FAIL: Generic content. || Overall_Status=FAIL",
+          "Created_At": "2026-10-26 10:34:00",
+          "Updated_At": "2026-10-26 10:34:04"
+        }
+      }
+    },
+    {
+      "id": "T10",
+      "title": "Docs write failure (403): not marked APPROVED, ledger FAILED, nothing appended; a later retry succeeds exactly once",
+      "status": "PASSED",
+      "evidence": {
+        "afterFailure": {
+          "db": {
+            "status": "ERROR",
+            "current_article_id": "ART-20261026-2A08C862A1",
+            "last_error_class": "API_TRANSIENT",
+            "last_error": "DOC_WRITE_NOT_FOUND: marker not present in the master document after the write",
+            "technical_failures": 1,
+            "article_status": "ERROR",
+            "attempt_count": 1,
+            "sheet_synced": false,
+            "ledger_state": "FAILED"
+          },
+          "sheet": {
+            "Keyword_ID": "KW801",
+            "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+            "Primary_Keyword": "washroom hygiene services pune",
+            "Supporting_Keywords": "office cleaning, commercial housekeeping",
+            "Search_Intent": "Commercial",
+            "Target_Audience": "Office managers",
+            "Target_Location": "Pune",
+            "Language": "English",
+            "Priority": "High",
+            "Status": "READY",
+            "Processing_Started_At": "2026-10-26 10:34:05",
+            "Processed_At": "2026-10-26 10:34:08",
+            "Last_Error": "[API_TRANSIENT] GOOGLE_DOCS_VERIFY: DOC_WRITE_NOT_FOUND: marker not present in the master document after the write (execution 33)"
+          }
+        },
+        "afterRetry": {
+          "db": {
+            "status": "APPROVED",
+            "current_article_id": "ART-20261026-2A08C862A1",
+            "last_error_class": null,
+            "last_error": null,
+            "technical_failures": 0,
+            "article_status": "APPROVED",
+            "attempt_count": 2,
+            "sheet_synced": true,
+            "ledger_state": "VERIFIED"
+          },
+          "sheet": {
+            "Keyword_ID": "KW801",
+            "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+            "Primary_Keyword": "washroom hygiene services pune",
+            "Supporting_Keywords": "office cleaning, commercial housekeeping",
+            "Search_Intent": "Commercial",
+            "Target_Audience": "Office managers",
+            "Target_Location": "Pune",
+            "Language": "English",
+            "Priority": "High",
+            "Status": "APPROVED",
+            "Processing_Started_At": "2026-10-26 10:34:10",
+            "Processed_At": "2026-10-26 10:34:13",
+            "Last_Error": ""
+          },
+          "markers": 1
+        }
+      }
+    },
+    {
+      "id": "T11a",
+      "title": "Uncertain Docs write (update applied but API returned 500): verification finds the marker, approves without a second append",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "APPROVED",
+          "current_article_id": "ART-20261026-1878FCC350",
+          "last_error_class": null,
+          "last_error": null,
+          "technical_failures": 0,
+          "article_status": "APPROVED",
+          "attempt_count": 1,
+          "sheet_synced": true,
+          "ledger_state": "VERIFIED"
+        },
+        "ops": [
+          "get",
+          "batchUpdate",
+          "get"
+        ]
+      }
+    },
+    {
+      "id": "T11b",
+      "title": "Partial success (Docs written, Sheets update failed): article APPROVED in DB with sheet_synced=false; Error Recovery syncs Sheets without re-appending",
+      "status": "PASSED",
+      "evidence": {
+        "before": {
+          "db": {
+            "status": "APPROVED",
+            "current_article_id": "ART-20261026-F6C4AA4366",
+            "last_error_class": null,
+            "last_error": null,
+            "technical_failures": 0,
+            "article_status": "APPROVED",
+            "attempt_count": 1,
+            "sheet_synced": false,
+            "ledger_state": "VERIFIED"
+          },
+          "sheet": {
+            "Keyword_ID": "KW902",
+            "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+            "Primary_Keyword": "reception area cleaning pune",
+            "Supporting_Keywords": "office cleaning, commercial housekeeping",
+            "Search_Intent": "Commercial",
+            "Target_Audience": "Office managers",
+            "Target_Location": "Pune",
+            "Language": "English",
+            "Priority": "High",
+            "Status": "PLAGIARISM_CHECK",
+            "Processing_Started_At": "2026-10-26 10:34:19",
+            "Processed_At": "",
+            "Last_Error": ""
+          },
+          "markers": 1
+        },
+        "after": {
+          "db": {
+            "status": "APPROVED",
+            "current_article_id": "ART-20261026-F6C4AA4366",
+            "last_error_class": null,
+            "last_error": null,
+            "technical_failures": 0,
+            "article_status": "APPROVED",
+            "attempt_count": 1,
+            "sheet_synced": true,
+            "ledger_state": "VERIFIED"
+          },
+          "sheet": {
+            "Keyword_ID": "KW902",
+            "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+            "Primary_Keyword": "reception area cleaning pune",
+            "Supporting_Keywords": "office cleaning, commercial housekeeping",
+            "Search_Intent": "Commercial",
+            "Target_Audience": "Office managers",
+            "Target_Location": "Pune",
+            "Language": "English",
+            "Priority": "High",
+            "Status": "APPROVED",
+            "Processing_Started_At": "2026-10-26 10:34:19",
+            "Processed_At": "2026-10-26 10:34:24",
+            "Last_Error": ""
+          },
+          "log": {
+            "Article_ID": "ART-20261026-F6C4AA4366",
+            "Keyword_ID": "KW902",
+            "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+            "Primary_Keyword": "reception area cleaning pune",
+            "Article_Title": "A practical guide to reception area cleaning pune",
+            "SEO_Title": "Practical Guide to reception area cleaning pune",
+            "Meta_Description": "Learn how to evaluate reception area cleaning pune: scope, supervision, consumables and questions to ask before you choose a provider for your office or facility.",
+            "URL_Slug": "reception-area-cleaning-pune-guide",
+            "Quality_Status": "PASS",
+            "EETA_Report": "{\"Checks\": {\"Expertise_Check\": \"PASS\", \"Experience_Check\": \"PASS\", \"Readability_Check\": \"PASS\", \"SEO_Relevance_Check\": \"PASS\", \"Original_Value_Check\": \"PASS\", \"Trustworthiness_Check\": \"PASS\", \"Brand_Compliance_Check\": \"PASS\", \"Factual_Accuracy_Check\": \"PASS\", \"Authoritativeness_Check\": \"PASS\", \"Target_Page_Alignment_Check\": \"PASS\"}, \"Overall\": \"PASS\", \"Unsupported_Claims\": 0}",
+            "Plagiarism_Percent": "0.00",
+            "Plagiarism_Status": "PASS",
+            "Plagiarism_Report_URL": "postgres:seo.article_attempts/ART-20261026-F6C4AA4366/1",
+            "Attempts": 1,
+            "Google_Doc_ID": "TEST-DOC",
+            "Google_Doc_URL": "https://docs.google.com/document/d/TEST-DOC/edit",
+            "Status": "APPROVED",
+            "Error": "",
+            "Updated_At": "2026-10-26 10:34:24"
+          }
+        },
+        "recovery": {
+          "status": 200,
+          "body": {
+            "sheet_synced": true
+          }
+        }
+      }
+    },
+    {
+      "id": "T11c",
+      "title": "Crash after Docs write (ledger PENDING): recovery finds the marker, marks VERIFIED, finalizes and syncs Sheets - no duplicate append",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "APPROVED",
+          "current_article_id": "ART-20261026-EB7D233523",
+          "last_error_class": null,
+          "last_error": null,
+          "technical_failures": 0,
+          "article_status": "APPROVED",
+          "attempt_count": 1,
+          "sheet_synced": true,
+          "ledger_state": "VERIFIED"
+        },
+        "sheet": {
+          "Keyword_ID": "KW903",
+          "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+          "Primary_Keyword": "meeting room cleaning pune",
+          "Supporting_Keywords": "office cleaning, commercial housekeeping",
+          "Search_Intent": "Commercial",
+          "Target_Audience": "Office managers",
+          "Target_Location": "Pune",
+          "Language": "English",
+          "Priority": "High",
+          "Status": "APPROVED",
+          "Processing_Started_At": "2026-10-26 10:34:25",
+          "Processed_At": "2026-10-26 10:34:29",
+          "Last_Error": ""
+        },
+        "recovery": {
+          "status": 200,
+          "body": {
+            "sheet_synced": true
+          }
+        }
+      }
+    },
+    {
+      "id": "T12",
+      "title": "Concurrency: two simultaneous executions see the same READY row; only one claims it, one article, one Docs append",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "APPROVED",
+          "current_article_id": "ART-20261026-D5A6BD949F",
+          "last_error_class": null,
+          "last_error": null,
+          "technical_failures": 0,
+          "article_status": "APPROVED",
+          "attempt_count": 1,
+          "sheet_synced": true,
+          "ledger_state": "VERIFIED"
+        },
+        "writerCalls": 1,
+        "responses": [
+          {
+            "run_id": "44",
+            "finished_at": "2026-10-26T05:04:34.667Z",
+            "processed": 1,
+            "outcomes": {
+              "APPROVED": 1
+            },
+            "details": [
+              {
+                "keyword_id": "KW950",
+                "article_id": "ART-20261026-D5A6BD949F",
+                "outcome": "APPROVED"
+              }
+            ]
+          },
+          {
+            "run_id": "45",
+            "finished_at": "2026-10-26T05:04:31.665Z",
+            "processed": 1,
+            "outcomes": {
+              "IN_PROGRESS_ELSEWHERE": 1
+            },
+            "details": [
+              {
+                "keyword_id": "KW950",
+                "article_id": "ART-20261026-D5A6BD949F",
+                "outcome": "IN_PROGRESS_ELSEWHERE"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "V1",
+      "title": "Input validation: bad scheme, empty keyword and duplicate Keyword_IDs are rejected with reasons (not dropped); non-READY rows untouched",
+      "status": "PASSED",
+      "evidence": {
+        "rows": [
+          {
+            "Keyword_ID": "KW990",
+            "Target_Page_URL": "ftp://example.com/x",
+            "Primary_Keyword": "housekeeping pune",
+            "Supporting_Keywords": "office cleaning, commercial housekeeping",
+            "Search_Intent": "Commercial",
+            "Target_Audience": "Office managers",
+            "Target_Location": "Pune",
+            "Language": "English",
+            "Priority": "High",
+            "Status": "ERROR",
+            "Processing_Started_At": "",
+            "Processed_At": "2026-10-26 10:34:35",
+            "Last_Error": "URL scheme ftp: is not allowed (allowed: https:, http:)"
+          },
+          {
+            "Keyword_ID": "KW991",
+            "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+            "Primary_Keyword": "",
+            "Supporting_Keywords": "office cleaning, commercial housekeeping",
+            "Search_Intent": "Commercial",
+            "Target_Audience": "Office managers",
+            "Target_Location": "Pune",
+            "Language": "English",
+            "Priority": "High",
+            "Status": "ERROR",
+            "Processing_Started_At": "",
+            "Processed_At": "2026-10-26 10:34:35",
+            "Last_Error": "Primary_Keyword is empty"
+          },
+          {
+            "Keyword_ID": "KW992",
+            "Target_Page_URL": "http://kargar-test.example:8787/a",
+            "Primary_Keyword": "gardening services pune",
+            "Supporting_Keywords": "office cleaning, commercial housekeeping",
+            "Search_Intent": "Commercial",
+            "Target_Audience": "Office managers",
+            "Target_Location": "Pune",
+            "Language": "English",
+            "Priority": "High",
+            "Status": "ERROR",
+            "Processing_Started_At": "",
+            "Processed_At": "2026-10-26 10:34:35",
+            "Last_Error": "Keyword_ID KW992 is used by 2 READY rows; Keyword_IDs must be unique"
+          },
+          {
+            "Keyword_ID": "KW992",
+            "Target_Page_URL": "http://kargar-test.example:8787/b",
+            "Primary_Keyword": "landscaping services pune",
+            "Supporting_Keywords": "office cleaning, commercial housekeeping",
+            "Search_Intent": "Commercial",
+            "Target_Audience": "Office managers",
+            "Target_Location": "Pune",
+            "Language": "English",
+            "Priority": "High",
+            "Status": "ERROR",
+            "Processing_Started_At": "",
+            "Processed_At": "2026-10-26 10:34:35",
+            "Last_Error": "Keyword_ID KW992 is used by 2 READY rows; Keyword_IDs must be unique"
+          },
+          {
+            "Keyword_ID": "KW993",
+            "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+            "Primary_Keyword": "not ready keyword",
+            "Supporting_Keywords": "office cleaning, commercial housekeeping",
+            "Search_Intent": "Commercial",
+            "Target_Audience": "Office managers",
+            "Target_Location": "Pune",
+            "Language": "English",
+            "Priority": "High",
+            "Status": "DRAFT",
+            "Processing_Started_At": "",
+            "Processed_At": "",
+            "Last_Error": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "T14",
+      "title": "Five-article batch with mixed outcomes: passing articles stored exactly once, failures kept out of the doc and recoverable on re-queue",
+      "status": "PASSED",
+      "evidence": {
+        "firstRun": {
+          "KW1401": {
+            "status": "APPROVED",
+            "current_article_id": "ART-20261026-F6D8D1FAD5",
+            "last_error_class": null,
+            "last_error": null,
+            "technical_failures": 0,
+            "article_status": "APPROVED",
+            "attempt_count": 1,
+            "sheet_synced": true,
+            "ledger_state": "VERIFIED"
+          },
+          "KW1402": {
+            "status": "APPROVED",
+            "current_article_id": "ART-20261026-C0841A5161",
+            "last_error_class": null,
+            "last_error": null,
+            "technical_failures": 0,
+            "article_status": "APPROVED",
+            "attempt_count": 1,
+            "sheet_synced": true,
+            "ledger_state": "VERIFIED"
+          },
+          "KW1403": {
+            "status": "REVIEW_REQUIRED",
+            "current_article_id": "ART-20261026-1EA29FB424",
+            "last_error_class": "HUMAN_REVIEW",
+            "last_error": "MAX_ARTICLE_ATTEMPTS (3) reached; last failure: Trustworthiness_Check=FAIL: Contains generic, unsupported performance claims. || Original_Value_Check=FAIL: Generic content. || Overall_Status=FAIL",
+            "technical_failures": 0,
+            "article_status": "REVIEW_REQUIRED",
+            "attempt_count": 3,
+            "sheet_synced": false,
+            "ledger_state": null
+          },
+          "KW1404": {
+            "status": "REVIEW_REQUIRED",
+            "current_article_id": "ART-20261026-A97443AECF",
+            "last_error_class": "HUMAN_REVIEW",
+            "last_error": "PAGE_HTTP_404: target page is not accessible (check URL, authentication or robots/firewall rules - access controls are not bypassed)",
+            "technical_failures": 0,
+            "article_status": "REVIEW_REQUIRED",
+            "attempt_count": 0,
+            "sheet_synced": false,
+            "ledger_state": null
+          },
+          "KW1405": {
+            "status": "ERROR",
+            "current_article_id": "ART-20261026-4004867372",
+            "last_error_class": "CONFIGURATION",
+            "last_error": "PLAGIARISM_CHECK_FAILED (chunk 0): Plagiarism API authentication failed (HTTP 401)",
+            "technical_failures": 1,
+            "article_status": "ERROR",
+            "attempt_count": 1,
+            "sheet_synced": false,
+            "ledger_state": null
+          }
+        },
+        "secondRun": {
+          "KW1401": {
+            "status": "APPROVED",
+            "current_article_id": "ART-20261026-F6D8D1FAD5",
+            "last_error_class": null,
+            "last_error": null,
+            "technical_failures": 0,
+            "article_status": "APPROVED",
+            "attempt_count": 1,
+            "sheet_synced": true,
+            "ledger_state": "VERIFIED"
+          },
+          "KW1402": {
+            "status": "APPROVED",
+            "current_article_id": "ART-20261026-C0841A5161",
+            "last_error_class": null,
+            "last_error": null,
+            "technical_failures": 0,
+            "article_status": "APPROVED",
+            "attempt_count": 1,
+            "sheet_synced": true,
+            "ledger_state": "VERIFIED"
+          },
+          "KW1403": {
+            "status": "REVIEW_REQUIRED",
+            "current_article_id": "ART-20261026-04F8DEB1C0",
+            "last_error_class": "HUMAN_REVIEW",
+            "last_error": "MAX_ARTICLE_ATTEMPTS (3) reached; last failure: Trustworthiness_Check=FAIL: Contains generic, unsupported performance claims. || Original_Value_Check=FAIL: Generic content. || Overall_Status=FAIL",
+            "technical_failures": 0,
+            "article_status": "REVIEW_REQUIRED",
+            "attempt_count": 3,
+            "sheet_synced": false,
+            "ledger_state": null
+          },
+          "KW1404": {
+            "status": "REVIEW_REQUIRED",
+            "current_article_id": "ART-20261026-6276C2D41C",
+            "last_error_class": "HUMAN_REVIEW",
+            "last_error": "PAGE_HTTP_404: target page is not accessible (check URL, authentication or robots/firewall rules - access controls are not bypassed)",
+            "technical_failures": 0,
+            "article_status": "REVIEW_REQUIRED",
+            "attempt_count": 0,
+            "sheet_synced": false,
+            "ledger_state": null
+          },
+          "KW1405": {
+            "status": "ERROR",
+            "current_article_id": "ART-20261026-4004867372",
+            "last_error_class": "CONFIGURATION",
+            "last_error": "PLAGIARISM_CHECK_FAILED (chunk 0): Plagiarism API authentication failed (HTTP 401)",
+            "technical_failures": 1,
+            "article_status": "ERROR",
+            "attempt_count": 2,
+            "sheet_synced": false,
+            "ledger_state": null
+          }
+        },
+        "regeneratedApproved": 0
+      }
+    },
+    {
+      "id": "T7b",
+      "title": "Asynchronous plagiarism report: job id captured, polled with Wait (bounded), completed report evaluated, then approved",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "APPROVED",
+          "current_article_id": "ART-20261026-98232F4543",
+          "last_error_class": null,
+          "last_error": null,
+          "technical_failures": 0,
+          "article_status": "APPROVED",
+          "attempt_count": 1,
+          "sheet_synced": true,
+          "ledger_state": "VERIFIED"
+        },
+        "polls": [
+          {
+            "service": "plagiarism",
+            "op": "poll",
+            "footprint": "fpec10b3389d56",
+            "n": 1
+          },
+          {
+            "service": "plagiarism",
+            "op": "poll",
+            "footprint": "fpec10b3389d56",
+            "n": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "T8b",
+      "title": "Plagiarism report never ready: polling stops at PLAGIARISM_MAX_POLLS, fails closed (not approved, retry later)",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "ERROR",
+          "current_article_id": "ART-20261026-8217091C2C",
+          "last_error_class": "API_TRANSIENT",
+          "last_error": "PLAGIARISM_POLL_TIMEOUT: report not ready after 3 polls; the article was not approved",
+          "technical_failures": 1,
+          "article_status": "ERROR",
+          "attempt_count": 1,
+          "sheet_synced": false,
+          "ledger_state": null
+        },
+        "polls": 3,
+        "sheet": {
+          "Keyword_ID": "KW1502",
+          "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+          "Primary_Keyword": "sofa cleaning services pune",
+          "Supporting_Keywords": "office cleaning, commercial housekeeping",
+          "Search_Intent": "Commercial",
+          "Target_Audience": "Office managers",
+          "Target_Location": "Pune",
+          "Language": "English",
+          "Priority": "High",
+          "Status": "READY",
+          "Processing_Started_At": "2026-10-26 10:35:07",
+          "Processed_At": "2026-10-26 10:35:13",
+          "Last_Error": "[API_TRANSIENT] PLAGIARISM: PLAGIARISM_POLL_TIMEOUT: report not ready after 3 polls; the article was not approved (execution 64)"
+        }
+      }
+    },
+    {
+      "id": "T-JSON",
+      "title": "Malformed structured output (prompt creator non-JSON, writer missing field, evaluator truncated): one correction each, then approved",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "APPROVED",
+          "current_article_id": "ART-20261026-E6F4041722",
+          "last_error_class": null,
+          "last_error": null,
+          "technical_failures": 0,
+          "article_status": "APPROVED",
+          "attempt_count": 1,
+          "sheet_synced": true,
+          "ledger_state": "VERIFIED"
+        },
+        "calls": [
+          "prompt_creator",
+          "prompt_creator(correction)",
+          "writer",
+          "writer(correction)",
+          "evaluator",
+          "evaluator(correction)"
+        ]
+      }
+    },
+    {
+      "id": "T-429",
+      "title": "Gemini rate limit (HTTP 429 twice): bounded node retry with backoff succeeds; not treated as a content failure",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "APPROVED",
+          "current_article_id": "ART-20261026-884F75723E",
+          "last_error_class": null,
+          "last_error": null,
+          "technical_failures": 0,
+          "article_status": "APPROVED",
+          "attempt_count": 1,
+          "sheet_synced": true,
+          "ledger_state": "VERIFIED"
+        },
+        "writerCalls": 3
+      }
+    },
+    {
+      "id": "T12b",
+      "title": "Master-doc lock held by another execution: bounded wait, lock acquired after expiry, written once",
+      "status": "PASSED",
+      "evidence": {
+        "db": {
+          "status": "APPROVED",
+          "current_article_id": "ART-20261026-5265179028",
+          "last_error_class": null,
+          "last_error": null,
+          "technical_failures": 0,
+          "article_status": "APPROVED",
+          "attempt_count": 1,
+          "sheet_synced": true,
+          "ledger_state": "VERIFIED"
+        }
+      }
+    },
+    {
+      "id": "T12c",
+      "title": "Master-doc lock never released: DOC_LOCK_TIMEOUT after DOC_LOCK_MAX_WAITS, not approved, retried successfully once the lock is free",
+      "status": "PASSED",
+      "evidence": {
+        "first": {
+          "db": {
+            "status": "ERROR",
+            "current_article_id": "ART-20261026-55C8907661",
+            "last_error_class": "API_TRANSIENT",
+            "last_error": "DOC_LOCK_TIMEOUT: master document locked by stuck-execution for more than 16s",
+            "technical_failures": 1,
+            "article_status": "ERROR",
+            "attempt_count": 1,
+            "sheet_synced": false,
+            "ledger_state": null
+          },
+          "sheet": {
+            "Keyword_ID": "KW1702",
+            "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+            "Primary_Keyword": "staircase cleaning services pune",
+            "Supporting_Keywords": "office cleaning, commercial housekeeping",
+            "Search_Intent": "Commercial",
+            "Target_Audience": "Office managers",
+            "Target_Location": "Pune",
+            "Language": "English",
+            "Priority": "High",
+            "Status": "READY",
+            "Processing_Started_At": "2026-10-26 10:35:39",
+            "Processed_At": "2026-10-26 10:36:00",
+            "Last_Error": "[API_TRANSIENT] GOOGLE_DOCS_BEFORE_WRITE: DOC_LOCK_TIMEOUT: master document locked by stuck-execution for more than 16s (execution 72)"
+          }
+        },
+        "retry": {
+          "status": "APPROVED",
+          "current_article_id": "ART-20261026-55C8907661",
+          "last_error_class": null,
+          "last_error": null,
+          "technical_failures": 0,
+          "article_status": "APPROVED",
+          "attempt_count": 2,
+          "sheet_synced": true,
+          "ledger_state": "VERIFIED"
+        }
+      }
+    },
+    {
+      "id": "T-AUTH",
+      "title": "Gemini authentication failure: preflight stops the run before any record is claimed or generated",
+      "status": "PASSED",
+      "evidence": {
+        "http": 500,
+        "sheet": {
+          "Keyword_ID": "KW1801",
+          "Target_Page_URL": "http://kargar-test.example:8787/housekeeping",
+          "Primary_Keyword": "terrace cleaning services pune",
+          "Supporting_Keywords": "office cleaning, commercial housekeeping",
+          "Search_Intent": "Commercial",
+          "Target_Audience": "Office managers",
+          "Target_Location": "Pune",
+          "Language": "English",
+          "Priority": "High",
+          "Status": "READY",
+          "Processing_Started_At": "",
+          "Processed_At": "",
+          "Last_Error": ""
+        }
+      }
+    },
+    {
+      "id": "T15",
+      "title": "Unhandled failure after a verified Docs write: Error Trigger workflow logs WORKFLOW_FAILED; article stays APPROVED/unsynced; scheduled recovery completes Sheets sync once",
+      "status": "PASSED",
+      "evidence": {
+        "failEvent": "{\"execution_id\":\"78\",\"workflow\":\"02 SEO Article Automation [E2E TEST]\",\"message\":\"Workflow \\\"02 SEO Article Automation [E2E TEST]\\\" failed at node \\\"Mark Sheet Synced\\\": INJECTED_FAULT for the error-trigger test\"}",
+        "beforeRecovery": {
+          "status": "APPROVED",
+          "current_article_id": "ART-20261026-D9327115B2",
+          "last_error_class": null,
+          "last_error": null,
+          "technical_failures": 0,
+          "article_status": "APPROVED",
+          "attempt_count": 1,
+          "sheet_synced": false,
+          "ledger_state": "VERIFIED"
+        },
+        "after": {
+          "status": "APPROVED",
+          "current_article_id": "ART-20261026-D9327115B2",
+          "last_error_class": null,
+          "last_error": null,
+          "technical_failures": 0,
+          "article_status": "APPROVED",
+          "attempt_count": 1,
+          "sheet_synced": true,
+          "ledger_state": "VERIFIED"
+        }
+      }
+    },
+    {
+      "id": "D1",
+      "title": "Master doc integrity: one marker per approved article, no duplicates, every Docs batchUpdate accepted by index validation",
+      "status": "PASSED",
+      "evidence": {
+        "markers": 22,
+        "approvedCount": 22,
+        "docChars": 99748
+      }
+    }
+  ]
+}

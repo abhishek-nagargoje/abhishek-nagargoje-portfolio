@@ -1,0 +1,3 @@
+Keyword_ID,Target_Page_URL,Primary_Keyword,Supporting_Keywords,Search_Intent,Target_Audience,Target_Location,Language,Priority,Status,Processing_Started_At,Processed_At,Last_Error,Regenerate
+KW001,https://example.com/housekeeping,housekeeping services Pune,"commercial housekeeping, office cleaning",Commercial,Office and facility managers,Pune,English,High,DRAFT,,,,
+KW002,https://example.com/facility-management,facility management services Pune,facility maintenance,Commercial,Facility managers,Pune,English,Medium,DRAFT,,,,

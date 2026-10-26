@@ -11,7 +11,7 @@ ctx.approval_payload = {
   editorial: { overall_status: ctx.editorial.overall_status, individual_checks: ctx.editorial.individual_checks,
     deterministic_checks: ctx.editorial.deterministic_checks, failed_conditions: ctx.editorial.failed_conditions,
     unsupported_claims: ctx.editorial.unsupported_claims, disclaimer: ctx.editorial.disclaimer, reviewer_comments: ctx.editorial.reviewer_comments },
-  plagiarism: { status: ctx.plagiarism.status, result_label: ctx.plagiarism.result_label, plag_percent: ctx.plagiarism.plag_percent,
+  plagiarism: { provider: ctx.plagiarism.provider || 'duplichecker', status: ctx.plagiarism.status, result_label: ctx.plagiarism.result_label, plag_percent: ctx.plagiarism.plag_percent,
     unique_percent: ctx.plagiarism.unique_percent, rephrased_percent: ctx.plagiarism.rephrased_percent, exact_percent: ctx.plagiarism.exact_percent,
     threshold_percent: ctx.plagiarism.threshold_percent, report_reference: ctx.plagiarism.report_reference, provider_hash: ctx.plagiarism.provider_hash },
   links: ctx.links,

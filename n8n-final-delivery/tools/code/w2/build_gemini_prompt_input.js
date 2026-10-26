@@ -95,5 +95,5 @@ const user = [
 ctx.gemini = { call: 'PROMPT', retries: 0, request: geminiRequest(system, user, { temperature: 0.4, maxOutputTokens: Math.min(16384, ctx.models.text_output_token_limit) }) };
 ctx.article_output_schema = articleSchema;
 // The full page text is no longer needed after this point.
-ctx.page.main_text_excerpt = truncate(ctx.page.main_text_excerpt, 3000);
+ctx.page.main_text_excerpt = truncate(ctx.page.main_text_excerpt, ctx.config.originality_page_excerpt_chars || 3000);
 return { json: { ctx, ok: true } };

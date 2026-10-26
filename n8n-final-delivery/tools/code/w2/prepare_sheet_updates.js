@@ -22,18 +22,24 @@ const eeta = e ? {
 } : { overall_status: 'NOT_EVALUATED', note: 'Article was not evaluated: ' + (f.reason || '') };
 let eetaText = JSON.stringify(eeta);
 if (eetaText.length > 45000) eetaText = eetaText.slice(0, 45000) + '…';
-const plagStatus = !p ? 'NOT_CHECKED' : (p.status === 'COMPLETED' ? (p.passed === false ? 'FAIL' : (p.result_label || 'PASS')) : p.status);
+const aiReview = (p && p.provider === 'gemini_originality_review') || c.originality_reviewer === 'gemini_originality_review';
+let plagStatus;
+if (aiReview) {
+  // No external plagiarism check exists in this mode: never a percentage or report URL.
+  plagStatus = !p || !p.result_label ? (p && p.status === 'FAILED' ? 'REVIEW_REQUIRED' : 'AI_REVIEW_ONLY') : p.result_label;
+} else plagStatus = !p ? 'NOT_CHECKED' : (p.status === 'COMPLETED' ? (p.passed === false ? 'FAIL' : (p.result_label || 'PASS')) : p.status);
+const docLinked = (f.status === 'APPROVED' || f.doc_written) && ctx.doc;
 const articleLog = {
   Article_ID: ctx.job.article_id, Keyword_ID: ctx.keyword.Keyword_ID, Target_Page_URL: ctx.keyword.Target_Page_URL,
   Primary_Keyword: ctx.keyword.Primary_Keyword, Article_Title: a.Article_Title || '', SEO_Title: a.SEO_Title || '',
   Meta_Description: a.Meta_Description || '', URL_Slug: a.URL_Slug || '', Quality_Status: f.quality_status || (e ? e.overall_status : 'NOT_EVALUATED'),
   EETA_Report: eetaText,
-  Plagiarism_Percent: p && p.plag_percent !== undefined && p.plag_percent !== null ? p.plag_percent : '',
+  Plagiarism_Percent: !aiReview && p && p.plag_percent !== undefined && p.plag_percent !== null ? p.plag_percent : '',
   Plagiarism_Status: plagStatus,
-  Plagiarism_Report_URL: p ? (p.report_reference || '') : '',
+  Plagiarism_Report_URL: !aiReview && p ? (p.report_reference || '') : '',
   Attempts: ctx.attempt || 0,
-  Google_Doc_ID: f.status === 'APPROVED' && ctx.doc ? (ctx.doc.doc_id || '') : '',
-  Google_Doc_URL: f.status === 'APPROVED' && ctx.doc ? (ctx.doc.url || '') : '',
+  Google_Doc_ID: docLinked ? (ctx.doc.doc_id || '') : '',
+  Google_Doc_URL: docLinked ? (ctx.doc.url || '') : '',
   Status: f.status,
   Error: f.status === 'APPROVED' ? ((ctx.doc && ctx.doc.warnings && ctx.doc.warnings.length) ? 'Warnings: ' + ctx.doc.warnings.join(' | ') : '') : truncate('[' + f.stage + '] ' + f.reason, 2000),
   Created_At: ctx.job.created_at ? DateTime.fromISO(String(ctx.job.created_at)).setZone(c.timezone).toFormat('yyyy-MM-dd HH:mm:ss') : now,

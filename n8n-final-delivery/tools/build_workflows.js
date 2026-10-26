@@ -461,6 +461,87 @@ function buildW2() {
 }
 
 // =====================================================================
+// Workflow 02 variant - Gemini originality review instead of DupliChecker
+// =====================================================================
+// Built FROM the original graph: every node not listed below is identical.
+const W2G_REMOVED = ['Check DupliChecker Account', 'Validate DupliChecker Account', 'Prepare Plagiarism Submission',
+  'Within Plagiarism Word Limit?', 'Submit Plagiarism Check', 'Parse Plagiarism Submission', 'Submission Route',
+  'Record Plagiarism Submission', 'Prepare Plagiarism Polling', 'Needs Polling?', 'Wait Before Poll',
+  'Retrieve Completed Plagiarism Report', 'Evaluate Plagiarism Poll', 'Poll Route', 'Check Plagiarism Acceptance Criteria',
+  'Record Plagiarism Result', 'Finalize Approved Job'];
+function buildW2Gemini() {
+  const base = buildW2();
+  const w = new WF('HR Remedy India - SEO Article Automation (Gemini Originality Review)', 'w2g');
+  const posOf = (n) => base.nodes.find((x) => x.name === n).position;
+  const removedPos = Object.fromEntries(W2G_REMOVED.map((n) => [n, posOf(n)]));
+  for (const n of base.nodes) if (!W2G_REMOVED.includes(n.name)) { w.nodes.push(n); w.byName.set(n.name, n); }
+  for (const [from, c] of Object.entries(base.connections)) {
+    if (W2G_REMOVED.includes(from) || ['Record Editorial Result', 'Record Document Verified', 'Resolve Gemini Models', 'Continue After PLAGIARISM_CHECK'].includes(from)) continue;
+    w.connections[from] = { main: c.main.map((ts) => ts.filter((t) => !W2G_REMOVED.includes(t.node) && t.node !== 'Status Row: PLAGIARISM_CHECK')) };
+  }
+  const setCode = (name, file) => { const s = codeSource(file); w.byName.get(name).parameters = s.mode === 'each' ? { mode: 'runOnceForEachItem', jsCode: s.code } : { jsCode: s.code }; };
+  const at = (name, px) => { w.byName.get(name).position = [px[0], px[1]]; };
+  const EV = (event, payload) => '[ $json.ctx.job.article_id, $json.ctx.run.execution_id, \'' + event + '\', JSON.stringify(' + payload + '), $json.ctx.config.lease_minutes, JSON.stringify($json.ctx) ]';
+  const EVQ = 'SELECT e.lease_ok, e.status AS job_status, e.run_no, e.attempts, e.detail, $6::jsonb AS ctx FROM seo_job_event($1, $2, $3, $4::jsonb, $5) e';
+
+  // Configuration without DupliChecker; review document instead of the approved library.
+  setCode('Configuration', 'w2g/configuration.js');
+  setCode('Validate Configuration', 'w2g/validate_configuration.js');
+  const css = w.byName.get('Check Schema & Settings');
+  let qr = css.parameters.options.queryReplacement.split("$('Validate DupliChecker Account')").join("$('Resolve Gemini Models')");
+  const VC = "$('Resolve Gemini Models').item.json.ctx";
+  qr = qr.replace('duplichecker_api_base: ' + VC + '.config.duplichecker_api_base, ', '')
+    .replace('plagiarism_threshold_percent: ' + VC + '.config.plagiarism_threshold_percent, plagiarism_max_rephrased_percent: ' + VC + '.config.plagiarism_max_rephrased_percent, ',
+      'originality_reviewer: ' + VC + '.config.originality_reviewer, external_plagiarism_check_performed: false, ');
+  if (/duplichecker|plagiarism_threshold/i.test(qr)) throw new Error('runtime config still references DupliChecker');
+  css.parameters.options.queryReplacement = qr;
+  w.byName.get('Load Master Doc Setting').parameters = { operation: 'executeQuery',
+    query: 'SELECT seo_get_setting($3) AS master_doc, $1::boolean AS lease_ok, $2::jsonb AS ctx',
+    options: { queryReplacement: '={{ [ $json.lease_ok, JSON.stringify($json.ctx), $json.ctx.config.doc_setting_key ] }}' } };
+  w.byName.get('Save Master Doc ID').parameters = { operation: 'executeQuery',
+    query: 'SELECT m.won, m.master_doc, $4::jsonb AS ctx FROM seo_set_doc_setting($1, $2, $3::jsonb) m',
+    options: { queryReplacement: "={{ [ $json.ctx.config.doc_setting_key, $json.ctx.doc.previous_doc_id || '', JSON.stringify($json.ctx.doc.stored), JSON.stringify($json.ctx) ] }}" } };
+  w.byName.get('Read Me').parameters.content = '## HR Remedy India – SEO Article Automation (Gemini originality review)\nOne READY keyword per execution: page analysis → RAG → Gemini prompt → Gemini article → E-E-A-T editorial check → **Gemini originality review** (AI review only, no plagiarism percentage, no external database) → revise (max 3 attempts) → document **"Pending Human Review"** → Article_Log / Keywords.\n\n* No DupliChecker credential is needed.\n* Articles that pass every check end as **REVIEW_REQUIRED** (human review before publication), never APPROVED automatically.\n* Only edit the **Configuration** node. Schedule disabled by default. Error workflow: **HR Remedy India - Error Recovery** (publish it on n8n 2.x).';
+  w.byName.get('Lane 3').parameters.content = '## 3. Article, editorial check, Gemini originality review and revision loop';
+  w.byName.get('Lane 4').parameters.content = '## 4. Approval gate, pending-human-review Google Doc and Google Sheets';
+
+  // New nodes, placed where the removed plagiarism nodes were.
+  const P = (n) => removedPos[n];
+  w.code('Build Originality Review Request', 'w2g/build_originality_review_request.js', [0, 0]); at('Build Originality Review Request', P('Prepare Plagiarism Submission'));
+  pg(w, 'Record Originality Review Start', EVQ, EV('PLAG_SUBMITTED',
+    '({ attempt_no: $json.ctx.attempt, submitted_text: $json.ctx.check_text, provider: $json.ctx.plagiarism.provider, provider_hash: $json.ctx.plagiarism.provider_hash, provider_key: null, word_count: $json.ctx.check_word_count, threshold_percent: null, raw: null })'), [0, 0]);
+  at('Record Originality Review Start', P('Record Plagiarism Submission'));
+  w.code('Originality Review Request', 'w2g/originality_review_request.js', [0, 0]); at('Originality Review Request', P('Within Plagiarism Word Limit?'));
+  const GEN_URL = "={{ $json.ctx.config.gemini_api_base }}/models/{{ $json.ctx.models.text_model }}:generateContent";
+  http(w, 'Gemini Originality Review', { method: 'POST', url: GEN_URL, cred: 'gemini', json: 'JSON.stringify($json.ctx.gemini.request)', retry: 3, timeout: 300000 }, [0, 0]);
+  at('Gemini Originality Review', P('Submit Plagiarism Check'));
+  w.code('Validate Originality Review', 'w2g/validate_originality_review.js', [0, 0]); at('Validate Originality Review', P('Parse Plagiarism Submission'));
+  w.add('Originality Review Route', 'n8n-nodes-base.switch', 3, switchParams('$json.route', ['VALID', 'RETRY', 'FAIL'], 'FAIL'), [0, 0]);
+  at('Originality Review Route', P('Submission Route'));
+  w.code('Check Originality Acceptance Criteria', 'w2g/check_originality_acceptance.js', [0, 0]); at('Check Originality Acceptance Criteria', P('Check Plagiarism Acceptance Criteria'));
+  pg(w, 'Record Originality Result', EVQ, EV('PLAG_RESULT',
+    "({ attempt_no: $json.ctx.attempt, provider: $json.ctx.plagiarism.provider, provider_hash: $json.ctx.plagiarism.provider_hash, status: 'COMPLETED', result_label: $json.ctx.plagiarism.result_label, review_status: $json.ctx.plagiarism.review_status, plag_percent: null, passed: $json.ctx.plagiarism.passed === true, error: null, result: { originality: $json.ctx.plagiarism.originality, reasons: $json.ctx.plagiarism.reasons } })"), [0, 0]);
+  at('Record Originality Result', P('Record Plagiarism Result'));
+  w.code('Require Human Review', 'w2g/require_human_review.js', [0, 0]);
+  const fin = P('Finalize Approved Job');
+  at('Require Human Review', [fin[0], fin[1] - 200]);
+  pg(w, 'Finalize Pending Human Review', EVQ, EV('FINALIZE', '$json.ctx.finalize_payload'), [0, 0]); at('Finalize Pending Human Review', fin);
+
+  // Connections
+  w.link('Resolve Gemini Models', 'Ensure Database Schema');
+  w.chain('Record Editorial Result', 'Build Originality Review Request', 'Status Row: PLAGIARISM_CHECK');
+  w.chain('Continue After PLAGIARISM_CHECK', 'Record Originality Review Start', 'Originality Review Request', 'Gemini Originality Review',
+    'Validate Originality Review', 'Originality Review Route');
+  w.link('Originality Review Route', 'Check Originality Acceptance Criteria', 0);
+  w.link('Originality Review Route', 'Originality Review Request', 1);
+  w.link('Originality Review Route', 'Prepare Unapproved Outcome', 2);
+  w.chain('Check Originality Acceptance Criteria', 'Record Originality Result', 'Pass / Revise / Human Review Decision');
+  w.chain('Record Document Verified', 'Require Human Review', 'Finalize Pending Human Review', 'Prepare Sheet Updates');
+  for (const [from, c] of Object.entries(w.connections)) { c.main = c.main.map((ts) => ts); if (c.main.every((ts) => !ts.length)) delete w.connections[from]; }
+  return w.toJSON(SETTINGS);
+}
+
+// =====================================================================
 // Workflow 03 - Error Recovery
 // =====================================================================
 function buildW3() {
@@ -522,7 +603,8 @@ function buildW3() {
 }
 
 fs.mkdirSync(OUT, { recursive: true });
-const outputs = [['01_Brand_RAG_Ingestion.json', buildW1()], ['02_SEO_Article_Automation.json', buildW2()], ['03_Error_Recovery.json', buildW3()]];
+const outputs = [['01_Brand_RAG_Ingestion.json', buildW1()], ['02_SEO_Article_Automation.json', buildW2()], ['03_Error_Recovery.json', buildW3()],
+  ['02_SEO_Article_Automation_Gemini_Review.json', buildW2Gemini()]];
 for (const [file, wf] of outputs) {
   fs.writeFileSync(path.join(OUT, file), JSON.stringify(wf, null, 2) + '\n');
   console.log('wrote workflows/' + file + ' (' + wf.nodes.length + ' nodes)');

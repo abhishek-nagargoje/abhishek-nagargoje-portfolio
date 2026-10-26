@@ -20,7 +20,8 @@ let state;
 function reset() {
   state = {
     scenario: { editorial_fail_attempts: [], plag_by_attempt: { 1: 25, 2: 3, 3: 3 }, plag_never_completes: false, prompt_invalid: false, article_invalid: false,
-      docs_batch_status: 200, sheet_fail: {}, gemini_down: false },
+      docs_batch_status: 200, sheet_fail: {}, gemini_down: false,
+      originality_fail_attempts: [], originality_invalid: false, originality_claims_scan_once: false },
     sheets: { Keywords: [], Brand_Knowledge: [], Article_Log: [] },
     docs: {}, docSeq: 0, calls: [], dcJobs: {}, dcSeq: 0, errors: [],
   };
@@ -71,6 +72,23 @@ function geminiGenerate(body) {
       internal_linking_instructions: [{ url: 'https://127.0.0.1:9443/site/recruitment', anchor_text_suggestion: 'recruitment services', placement: 'intro' }],
       article_structure_requirements: ['H2 sections'], seo_metadata_requirements: { seo_title: 's', meta_description: 'm', url_slug: 'u', h1: 'h' },
       target_word_range: { min: 900, max: 1800 }, writing_prompt: 'Write a practical article. '.repeat(30), output_json_schema: {} });
+  } else if (/originality and attribution reviewer/.test(sys)) {
+    const m = /Mock v(\d+)/.exec(userText); const attempt = m ? Number(m[1]) : 1;
+    const fail = state.scenario.originality_fail_attempts.includes(attempt);
+    const sawSources = /<source_material>/.test(userText) && /"source":"target_page"/.test(userText) && /"source":"brand_knowledge"/.test(userText);
+    if (state.scenario.originality_invalid) out = '{"status": "MAYBE"';
+    else if (state.scenario.originality_claims_scan_once && !corrective) {
+      out = JSON.stringify({ status: 'PASS', review_notes: 'We scanned the entire internet and found 3% similarity.', flagged_phrases: [], suggested_rewrites: [], sources_compared: [], limitations: [] });
+    } else out = JSON.stringify({
+      status: fail ? 'FAIL' : 'PASS',
+      review_notes: fail ? 'One passage closely follows the target page wording.' : 'Article adds process detail beyond the target page; no copied-looking passages found in the supplied material.' + (sawSources ? '' : ' (sources missing)'),
+      flagged_phrases: fail ? [{ text: 'Test fixture page content describing recruitment process steps', category: 'similar_to_target_page', reason: 'near-identical to target page', compared_with: 'target_page' },
+        { text: 'This guide explains', category: 'repetition', reason: 'stock phrase', compared_with: 'article' }] : [{ text: 'This guide explains', category: 'repetition', reason: 'minor stock phrase', compared_with: 'article' }],
+      suggested_rewrites: fail ? [{ original: 'Test fixture page content describing recruitment process steps', rewrite: 'Rewritten original explanation', reason: 'too close to source' }] : [],
+      sources_compared: [{ source: 'target_page', identifier: 'https://127.0.0.1:9443/site/recruitment', notes: 'compared' }, { source: 'brand_knowledge', identifier: 'KB-001', notes: 'compared' }],
+      limitations: ['Only supplied material was compared.'] });
+    state.calls.push({ api: 'gemini.generateContent', kind: 'ORIGINALITY', corrective, attempt, sawSources, json_mode: body.generationConfig && body.generationConfig.responseMimeType });
+    return { candidates: [{ content: { parts: [{ text: out }], role: 'model' }, finishReason: 'STOP' }], usageMetadata: { totalTokenCount: 500 }, modelVersion: 'mock' };
   } else if (/strict senior editor/.test(sys)) {
     const m = /Mock v(\d+)/.exec(userText); const attempt = m ? Number(m[1]) : 1;
     const fail = state.scenario.editorial_fail_attempts.includes(attempt);
@@ -86,7 +104,8 @@ function geminiGenerate(body) {
     if (state.scenario.article_invalid) out = '{"Article_Title": "broken"';
     else out = JSON.stringify(article(attempt, revising ? 'revision' : 'initial', userText));
   } else out = '{}';
-  state.calls.push({ api: 'gemini.generateContent', kind: /ARTICLE-WRITING/.test(sys) ? 'PROMPT' : /strict senior/.test(sys) ? 'EDITORIAL' : /REVISING/.test(sys) ? 'REVISION' : 'ARTICLE', corrective, json_mode: body.generationConfig && body.generationConfig.responseMimeType });
+  state.calls.push({ api: 'gemini.generateContent', kind: /ARTICLE-WRITING/.test(sys) ? 'PROMPT' : /strict senior/.test(sys) ? 'EDITORIAL' : /REVISING/.test(sys) ? 'REVISION' : 'ARTICLE', corrective, json_mode: body.generationConfig && body.generationConfig.responseMimeType,
+    hasOriginality: /originality_review/.test(userText) && /Rewritten original explanation/.test(userText) });
   return { candidates: [{ content: { parts: [{ text: out }], role: 'model' }, finishReason: 'STOP' }], usageMetadata: { totalTokenCount: 1000 }, modelVersion: 'mock' };
 }
 function docJson(id) {

@@ -246,13 +246,15 @@ BEGIN
       RAISE EXCEPTION 'STATE_ERROR: text submitted for plagiarism does not match the recorded article text';
     END IF;
     INSERT INTO seo_plagiarism_checks AS t
-      (article_id, run_no, attempt_no, content_sha256, word_count, provider_hash, provider_key,
+      (article_id, run_no, attempt_no, content_sha256, word_count, provider, provider_hash, provider_key,
        status, threshold_percent, result)
     VALUES
       (p_article_id, j.run_no, j.attempts, v_sha, nullif(p_payload->>'word_count', '')::int,
+       coalesce(nullif(p_payload->>'provider', ''), 'duplichecker'),
        p_payload->>'provider_hash', p_payload->>'provider_key', 'SUBMITTED',
        nullif(p_payload->>'threshold_percent', '')::numeric, p_payload->'raw')
     ON CONFLICT (article_id, run_no, attempt_no) DO UPDATE SET
+      provider = EXCLUDED.provider,
       content_sha256 = EXCLUDED.content_sha256, word_count = EXCLUDED.word_count,
       provider_hash = EXCLUDED.provider_hash, provider_key = EXCLUDED.provider_key,
       status = 'SUBMITTED', poll_count = 0, plag_percent = NULL, unique_percent = NULL,
@@ -444,6 +446,30 @@ $fn$;
 -- Master Google Doc (single shared document, created automatically).
 -- Compare-and-swap so concurrent executions converge on one document.
 -- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION seo_set_doc_setting(p_key text, p_expected_doc_id text, p_doc jsonb)
+RETURNS TABLE (won boolean, master_doc jsonb)
+LANGUAGE plpgsql
+AS $fn$
+DECLARE
+  v_current jsonb;
+BEGIN
+  IF p_key NOT IN ('master_doc', 'review_doc') THEN
+    RAISE EXCEPTION 'VALIDATION_ERROR: unsupported document setting %', p_key;
+  END IF;
+  IF coalesce(p_doc->>'doc_id', '') = '' THEN
+    RAISE EXCEPTION 'VALIDATION_ERROR: doc_id is required';
+  END IF;
+  PERFORM pg_advisory_xact_lock(724100002);
+  SELECT setting_value INTO v_current FROM seo_settings WHERE setting_key = p_key;
+  IF v_current IS NULL OR (v_current->>'doc_id') IS NOT DISTINCT FROM nullif(p_expected_doc_id, '') THEN
+    PERFORM seo_put_setting(p_key, p_doc || jsonb_build_object('stored_at', now()));
+    RETURN QUERY SELECT true, seo_get_setting(p_key);
+  ELSE
+    RETURN QUERY SELECT false, v_current;
+  END IF;
+END
+$fn$;
+
 CREATE OR REPLACE FUNCTION seo_set_master_doc(p_expected_doc_id text, p_doc jsonb)
 RETURNS TABLE (won boolean, master_doc jsonb)
 LANGUAGE plpgsql

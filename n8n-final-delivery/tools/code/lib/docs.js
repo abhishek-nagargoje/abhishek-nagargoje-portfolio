@@ -34,7 +34,11 @@ function buildDocSection(ctx) {
   labelled('Meta description', a.Meta_Description);
   labelled('Suggested URL slug', a.URL_Slug);
   labelled('Editorial result', e.overall_status + ' — all ' + e.individual_checks.length + ' mandatory checks passed (attempt ' + ctx.attempt + ' of ' + c.max_attempts + '). ' + e.disclaimer);
-  labelled('Plagiarism result', p.result_label + ' — DupliChecker reported ' + p.plag_percent + '% plagiarism' +
+  if (p.provider === 'gemini_originality_review') {
+    labelled('Publication status', 'PENDING HUMAN REVIEW — not approved for publication');
+    labelled('Originality review', p.result_label + ' — Gemini AI review against the target page and retrieved brand records only. ' +
+      'This is not an external plagiarism check and no plagiarism percentage was obtained.');
+  } else labelled('Plagiarism result', p.result_label + ' — DupliChecker reported ' + p.plag_percent + '% plagiarism' +
     (p.unique_percent !== null && p.unique_percent !== undefined ? ', ' + p.unique_percent + '% unique' : '') +
     (p.rephrased_percent !== null && p.rephrased_percent !== undefined ? ', ' + p.rephrased_percent + '% rephrased' : '') +
     ' (internal threshold ' + p.threshold_percent + '%)');

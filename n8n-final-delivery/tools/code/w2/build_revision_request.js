@@ -18,6 +18,8 @@ const findings = {
   required_corrections: e.required_corrections,
   plagiarism_report: { status: p.status, plag_percent: p.plag_percent, unique_percent: p.unique_percent, rephrased_percent: p.rephrased_percent,
     exact_percent: p.exact_percent, threshold_percent: p.threshold_percent, policy_failures: p.reasons },
+  originality_review: p.originality ? { status: p.originality.status, review_notes: p.originality.review_notes, flagged_phrases: p.originality.flagged_phrases,
+    suggested_rewrites: p.originality.suggested_rewrites } : undefined,
   matched_passages: (p.matches || []).slice(0, 25).map((m) => ({ text: m.text, sources: m.sources.map((s) => s.url).filter(Boolean).slice(0, 3) })),
   automated_findings: ctx.article_integrity,
 };

@@ -6,6 +6,7 @@ Import these three files into n8n (*⋯ → Import from File*), in this order:
 |---|---|---|
 | `workflows/01_Brand_RAG_Ingestion.json` | HR Remedy India - Brand RAG Ingestion | approved `Brand_Knowledge` rows → Gemini embeddings (768 d) → PostgreSQL/pgvector |
 | `workflows/02_SEO_Article_Automation.json` | HR Remedy India - SEO Article Automation | READY keyword → page analysis → RAG → Gemini prompt → Gemini article → editorial check → DupliChecker → revision (max 3) → master Google Doc → Article_Log / Keywords |
+| `workflows/02_SEO_Article_Automation_Gemini_Review.json` | HR Remedy India - SEO Article Automation (Gemini Originality Review) | **alternative to 02 without DupliChecker**: Gemini AI originality review; passing articles go to a "Pending Human Review" doc as REVIEW_REQUIRED — see `documentation/GEMINI_ORIGINALITY_REVIEW.md` |
 | `workflows/03_Error_Recovery.json` | HR Remedy India - Error Recovery | Error Trigger + recovery sweep: release failed jobs, reconcile sheets, collect late plagiarism reports |
 
 Then follow **`documentation/IMPORT_AND_SETUP.md`** (about 10 minutes: one new

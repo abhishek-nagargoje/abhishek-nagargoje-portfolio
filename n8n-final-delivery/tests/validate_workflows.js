@@ -9,7 +9,7 @@ const path = require('path');
 const vm = require('vm');
 
 const DIR = path.join(__dirname, '..', 'workflows');
-const FILES = ['01_Brand_RAG_Ingestion.json', '02_SEO_Article_Automation.json', '03_Error_Recovery.json'];
+const FILES = ['01_Brand_RAG_Ingestion.json', '02_SEO_Article_Automation.json', '03_Error_Recovery.json', '02_SEO_Article_Automation_Gemini_Review.json'];
 const registries = process.argv.slice(2).map((p) => ({ path: p, nodes: JSON.parse(fs.readFileSync(p, 'utf8')) }));
 const CRED_TYPES = { postgres: 'SEO PostgreSQL', googleSheetsOAuth2Api: 'Google Sheets account', googleDocsOAuth2Api: 'Google Docs account',
   googlePalmApi: 'Google Gemini(PaLM) Api account', httpCustomAuth: 'DupliChecker API' };
@@ -19,6 +19,7 @@ const TERMINALS = {
   '01_Brand_RAG_Ingestion.json': ['Ingestion Result'],
   '02_SEO_Article_Automation.json': ['No Eligible Keywords', 'Mark Invalid Keyword Rows', 'Mark Skipped Duplicates', 'Nothing Claimed', 'Final Result'],
   '03_Error_Recovery.json': ['Recovery Result', 'No Recovery Needed'],
+  '02_SEO_Article_Automation_Gemini_Review.json': ['No Eligible Keywords', 'Mark Invalid Keyword Rows', 'Mark Skipped Duplicates', 'Nothing Claimed', 'Final Result'],
 };
 // Every cycle must pass through one of these bounded decision points.
 const LOOP_GUARDS = {
@@ -27,6 +28,7 @@ const LOOP_GUARDS = {
   'Article Output Route': 'RETRY only while ctx.gemini.retries < 1',
   'Editorial Report Route': 'RETRY only while ctx.gemini.retries < 1',
   'Poll Route': 'PENDING only while poll_count < plagiarism_max_polls',
+  'Originality Review Route': 'RETRY only while ctx.gemini.retries < 1',
   'Decision Route': 'REVISE only while attempt < max_attempts (also enforced in PostgreSQL)',
   'Use Stored Master Doc': 'document creation bounded to one per execution (Create Master Doc Request)',
 };
@@ -184,6 +186,11 @@ for (const file of FILES) {
   });
   ok(allExpr.length + ' expressions parse; all $(\'Node\') references exist; Code nodes compile; SQL is parameterised');
 
+  if (file.includes('Gemini_Review')) {
+    const dupli = wf.nodes.filter((n) => (n.credentials && n.credentials.httpCustomAuth) || /duplichecker/i.test(JSON.stringify(n.parameters.url || '') + JSON.stringify(n.parameters.options || {})) || /DupliChecker/.test(n.name));
+    if (dupli.length) err(file, 'DupliChecker dependency left in: ' + dupli.map((n) => n.name).join(', '));
+    else ok('no DupliChecker node, URL or credential remains');
+  }
   // --- secrets and hard-coded identifiers
   if (/AIza[0-9A-Za-z_\-]{20,}/.test(raw)) err(file, 'looks like a Google API key');
   if (/"password"\s*:/.test(raw) || /localtest/.test(raw)) err(file, 'password-like content found');
